@@ -20,3 +20,12 @@ export interface CurriculumData {
   courses: Course[];
   prerequisites: Prerequisite[];
 }
+
+// Cores para os tipos de curso e elementos visuais
+export const courseColors = {
+  NB: '#ffcccc', // Rosa claro
+  NP: '#cce5ff', // Azul claro
+  NE: '#ffffcc', // Amarelo claro
+  NA: '#ccffcc', // Verde claro
+  arrow: '#8B5CF6' // Roxo para setas de pré-requisito
+};

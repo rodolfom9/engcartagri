@@ -17,21 +17,27 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
   toPosition,
   isDirectConnection
 }) => {
+  // Cores para as setas de pré-requisito
+  const arrowColor = '#8B5CF6'; // Roxo vibrante
+  const arrowWidth = '2px';
+  
   if (isDirectConnection) {
-    // Direct connection - simple horizontal line
+    // Conexão direta - linha horizontal simples com gradiente
     return (
       <>
-        {/* Horizontal line */}
+        {/* Linha horizontal com gradiente */}
         <div
-          className="absolute bg-arrow h-[2px] z-10"
+          className="absolute z-10"
           style={{
             left: `${fromPosition.left}px`,
             top: `${fromPosition.top}px`,
             width: `${toPosition.left - fromPosition.left}px`,
+            height: arrowWidth,
+            background: `linear-gradient(to right, ${arrowColor}80, ${arrowColor})`,
           }}
         />
         
-        {/* Arrow tip */}
+        {/* Ponta da seta */}
         <div
           className="absolute w-0 h-0 z-20"
           style={{
@@ -39,70 +45,83 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
             top: `${toPosition.top - 5}px`,
             borderTop: '5px solid transparent',
             borderBottom: '5px solid transparent',
-            borderLeft: '10px solid #ff5722',
+            borderLeft: `10px solid ${arrowColor}`,
+            filter: 'drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.2))',
           }}
         />
       </>
     );
   } else {
-    // Complex connection with curves
+    // Conexão complexa com curvas
     const midX = fromPosition.left + 30;
     const midY1 = fromPosition.top + 40;
     const midX2 = toPosition.left - 35;
     
     return (
       <>
-        {/* Line from source */}
+        {/* Linha do ponto de origem */}
         <div
-          className="absolute bg-arrow h-[2px] z-10"
+          className="absolute z-10"
           style={{
             left: `${fromPosition.left}px`,
             top: `${fromPosition.top}px`,
             width: `30px`,
+            height: arrowWidth,
+            background: arrowColor,
           }}
         />
         
-        {/* Vertical line down */}
+        {/* Linha vertical para baixo */}
         <div
-          className="absolute bg-arrow w-[2px] z-10"
+          className="absolute z-10"
           style={{
             left: `${midX}px`,
             top: `${Math.min(fromPosition.top, midY1)}px`,
+            width: arrowWidth,
             height: `${Math.abs(midY1 - fromPosition.top)}px`,
+            background: arrowColor,
           }}
         />
         
-        {/* Horizontal line connecting */}
+        {/* Linha horizontal conectora */}
         <div
-          className="absolute bg-arrow h-[2px] z-10"
+          className="absolute z-10"
           style={{
-            left: `${midX}px`,
+            left: `${Math.min(midX, midX2)}px`,
             top: `${midY1}px`,
-            width: `${midX2 - midX}px`,
+            width: `${Math.abs(midX2 - midX)}px`,
+            height: arrowWidth,
+            background: arrowColor,
+            opacity: 0.7,
           }}
         />
         
-        {/* Vertical line up/down to destination level */}
+        {/* Linha vertical para cima/baixo até o nível do destino */}
         <div
-          className="absolute bg-arrow w-[2px] z-10"
+          className="absolute z-10"
           style={{
             left: `${midX2}px`,
             top: `${Math.min(midY1, toPosition.top)}px`,
+            width: arrowWidth,
             height: `${Math.abs(toPosition.top - midY1)}px`,
+            background: arrowColor,
+            opacity: 0.8,
           }}
         />
         
-        {/* Final horizontal line to destination */}
+        {/* Linha horizontal final até o destino */}
         <div
-          className="absolute bg-arrow h-[2px] z-10"
+          className="absolute z-10"
           style={{
             left: `${midX2}px`,
             top: `${toPosition.top}px`,
             width: `${toPosition.left - midX2}px`,
+            height: arrowWidth,
+            background: `linear-gradient(to right, ${arrowColor}80, ${arrowColor})`,
           }}
         />
         
-        {/* Arrow tip */}
+        {/* Ponta da seta */}
         <div
           className="absolute w-0 h-0 z-20"
           style={{
@@ -110,7 +129,8 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
             top: `${toPosition.top - 5}px`,
             borderTop: '5px solid transparent',
             borderBottom: '5px solid transparent',
-            borderLeft: '10px solid #ff5722',
+            borderLeft: `10px solid ${arrowColor}`,
+            filter: 'drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.2))',
           }}
         />
       </>
