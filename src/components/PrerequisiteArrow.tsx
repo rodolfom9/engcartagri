@@ -17,8 +17,8 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
   toPosition,
   isDirectConnection
 }) => {
-  // Cores para as setas de pré-requisito
-  const arrowColor = '#8B5CF6'; // Roxo vibrante
+  // Mudança para a cor vermelha para as setas de pré-requisito
+  const arrowColor = '#ea384c'; // Vermelho vibrante
   const arrowWidth = '2px';
   
   if (isDirectConnection) {
@@ -37,14 +37,14 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
           }}
         />
         
-        {/* Ponta da seta */}
+        {/* Ponta da seta centralizada verticalmente */}
         <div
           className="absolute w-0 h-0 z-20"
           style={{
             left: `${toPosition.left - 10}px`,
-            top: `${toPosition.top - 5}px`,
-            borderTop: '5px solid transparent',
-            borderBottom: '5px solid transparent',
+            top: `${toPosition.top - 4}px`, // Ajuste para centralização da seta
+            borderTop: '4px solid transparent',
+            borderBottom: '4px solid transparent',
             borderLeft: `10px solid ${arrowColor}`,
             filter: 'drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.2))',
           }}
@@ -52,9 +52,12 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
       </>
     );
   } else {
-    // Conexão complexa com curvas
+    // Conexão complexa com curvas ajustadas para evitar passar pelas disciplinas
     const midX = fromPosition.left + 30;
-    const midY1 = fromPosition.top + 40;
+    
+    // Ajuste para evitar que as linhas passem pelo meio das disciplinas
+    // As linhas agora passam mais abaixo das disciplinas
+    const midY1 = fromPosition.top + 60; // Aumentado para 60px para passar abaixo das disciplinas
     const midX2 = toPosition.left - 35;
     
     return (
@@ -92,7 +95,7 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
             width: `${Math.abs(midX2 - midX)}px`,
             height: arrowWidth,
             background: arrowColor,
-            opacity: 0.7,
+            opacity: 0.8,
           }}
         />
         
@@ -105,7 +108,7 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
             width: arrowWidth,
             height: `${Math.abs(toPosition.top - midY1)}px`,
             background: arrowColor,
-            opacity: 0.8,
+            opacity: 0.9,
           }}
         />
         
@@ -121,14 +124,14 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
           }}
         />
         
-        {/* Ponta da seta */}
+        {/* Ponta da seta centralizada verticalmente */}
         <div
           className="absolute w-0 h-0 z-20"
           style={{
             left: `${toPosition.left - 10}px`,
-            top: `${toPosition.top - 5}px`,
-            borderTop: '5px solid transparent',
-            borderBottom: '5px solid transparent',
+            top: `${toPosition.top - 4}px`, // Ajuste para centralização da seta
+            borderTop: '4px solid transparent',
+            borderBottom: '4px solid transparent',
             borderLeft: `10px solid ${arrowColor}`,
             filter: 'drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.2))',
           }}

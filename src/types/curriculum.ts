@@ -27,5 +27,5 @@ export const courseColors = {
   NP: '#cce5ff', // Azul claro
   NE: '#ffffcc', // Amarelo claro
   NA: '#ccffcc', // Verde claro
-  arrow: '#8B5CF6' // Roxo para setas de pré-requisito
+  arrow: '#ea384c' // Vermelho para setas de pré-requisito
 };
