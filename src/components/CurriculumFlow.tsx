@@ -18,7 +18,7 @@ const CurriculumFlow: React.FC = () => {
   // Calculate course position based on period and row
   const calculatePosition = (period: number, row: number) => {
     const periodWidth = 155;
-    const periodGap = 40;
+    const periodGap = 60; // Increased from 40 to 60 (50% more)
     const rowHeight = 110;
     const rowGap = 10;
     
@@ -52,7 +52,7 @@ const CurriculumFlow: React.FC = () => {
           {Array.from({ length: maxPeriod }, (_, i) => (
             <div 
               key={`period-${i+1}`} 
-              className="w-[155px] mr-10 last:mr-0 text-center p-2 bg-white border border-gray-300 rounded-md shadow-sm"
+              className="w-[155px] mr-[60px] last:mr-0 text-center p-2 bg-white border border-gray-300 rounded-md shadow-sm"
             >
               {`${i+1}º Período`}
             </div>
