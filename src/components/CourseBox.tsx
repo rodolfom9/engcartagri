@@ -12,6 +12,7 @@ interface CourseBoxProps {
   onToggleCompletion: (courseId: string) => void;
   onClick: () => void;
   isFlowTab?: boolean;
+  width?: number;
 }
 
 const CourseBox: React.FC<CourseBoxProps> = ({ 
@@ -21,7 +22,8 @@ const CourseBox: React.FC<CourseBoxProps> = ({
   canTake,
   onToggleCompletion,
   onClick,
-  isFlowTab = true
+  isFlowTab = true,
+  width = 155
 }) => {
   // Map course type to CSS class
   const getCourseTypeClass = (type: string) => {
@@ -38,10 +40,11 @@ const CourseBox: React.FC<CourseBoxProps> = ({
 
   return (
     <div
-      className="absolute w-[155px] bg-white border border-gray-300 rounded shadow-sm overflow-hidden animate-fade-in cursor-pointer"
+      className="absolute bg-white border border-gray-300 rounded shadow-sm overflow-hidden animate-fade-in cursor-pointer"
       style={{
         left: `${position.left}px`,
         top: `${position.top}px`,
+        width: `${width}px`
       }}
       onClick={onClick}
     >

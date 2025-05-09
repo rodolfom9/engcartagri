@@ -20,6 +20,7 @@ const CurriculumFlow: React.FC = () => {
   const [schedule, setSchedule] = useState<Record<string, Record<string, Course | null>>>({});
   const [activeTab, setActiveTab] = useState('flow');
   const [zoom, setZoom] = useState(70); // Começa com 70% (30% menor que o original)
+  const [periodWidth, setPeriodWidth] = useState(160); // Estado para controlar a largura dos períodos
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [hoveredCourse, setHoveredCourse] = useState<Course | null>(null);
@@ -32,7 +33,6 @@ const CurriculumFlow: React.FC = () => {
 
   // Calculate course position based on period and row
   const calculatePosition = (period: number, row: number) => {
-    const periodWidth = 140; // Reduced from 155 by 30%
     const periodGap = 70; // Reduced from 75 by 30%
     const rowHeight = 100; // Reduced from 110 by 30%
     const rowGap = 45; // Reduced from 50 by 30%
@@ -233,10 +233,11 @@ const CurriculumFlow: React.FC = () => {
                   return (
                     <div 
                       key={`period-${i+1}`} 
-                      className="absolute text-center p-1 bg-white border border-gray-300 rounded-md shadow-sm w-[140px]"
+                      className="absolute text-center p-1 bg-white border border-gray-300 rounded-md shadow-sm"
                       style={{ 
                         left: `${periodPosition.left}px`,
-                        height: '25px', 
+                        height: '25px',
+                        width: `${periodWidth}px`,
                         lineHeight: '1'
                       }}
                     >
@@ -263,6 +264,7 @@ const CurriculumFlow: React.FC = () => {
                       onToggleCompletion={toggleCourseCompletion}
                       onClick={() => setSelectedCourse(course)}
                       isFlowTab={activeTab === 'flow'}
+                      width={periodWidth}
                     />
                   );
                 })}
@@ -281,7 +283,7 @@ const CurriculumFlow: React.FC = () => {
                     <PrerequisiteArrow
                       key={`${prereq.from}-${prereq.to}`}
                       fromPosition={{
-                        left: fromPosition.left + 155, // Largura total da box
+                        left: fromPosition.left + periodWidth, // Largura total da box
                         top: fromPosition.top + 40   // Metade da altura da box
                       }}
                       toPosition={{
@@ -290,6 +292,7 @@ const CurriculumFlow: React.FC = () => {
                       }}
                       isDirectConnection={toCourse.period - fromCourse.period === 1 && Math.abs(toCourse.row - fromCourse.row) <= 1}
                       rowDifference={Math.abs(toCourse.row - fromCourse.row)}
+                      boxWidth={0}
                     />
                   );
                 })}

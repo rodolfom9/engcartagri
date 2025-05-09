@@ -12,12 +12,15 @@ interface PrerequisiteArrowProps {
   toPosition: Position;        // Posição final da seta (disciplina de destino)
   isDirectConnection: boolean; // Indica se é uma conexão direta (mesma linha) ou não
   rowDifference?: number;      // Diferença entre as linhas (opcional)
+  boxWidth: number;            // Largura da caixa da disciplina
 }
 
 const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
   fromPosition,
   toPosition,
-  isDirectConnection
+  isDirectConnection,
+  rowDifference,
+  boxWidth
 }) => {
   // Configurações visuais padrão para todas as setas
   const arrowColor = '#ea384c'; // Cor vermelha vibrante para todas as setas
@@ -31,9 +34,9 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
         <div
           className="absolute z-10"
           style={{
-            left: `${fromPosition.left}px`,
+            left: `${fromPosition.left + boxWidth}px`,
             top: `${fromPosition.top}px`,
-            width: `${toPosition.left - fromPosition.left}px`,
+            width: `${toPosition.left - fromPosition.left - boxWidth}px`,
             height: arrowWidth,
             background: `linear-gradient(to right, ${arrowColor}80, ${arrowColor})`,
           }}
@@ -67,7 +70,7 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
         <div
           className="absolute z-10"
           style={{
-            left: `${fromPosition.left}px`,
+            left: `${fromPosition.left + boxWidth}px`,
             top: `${fromPosition.top}px`,
             width: `30px`,
             height: arrowWidth,
