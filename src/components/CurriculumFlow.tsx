@@ -19,7 +19,7 @@ const CurriculumFlow: React.FC = () => {
     const periodWidth = 155;
     const periodGap = 75; // Increased from 60 to 75 (25% more)
     const rowHeight = 110;
-    const rowGap = 20; // Doubled from 10 to 20
+    const rowGap = 50; // Doubled from 10 to 20
     
     const left = (period - 1) * (periodWidth + periodGap);
     const top = (row - 1) * (rowHeight + rowGap);
