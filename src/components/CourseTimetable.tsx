@@ -29,11 +29,11 @@ const CourseTimetable: React.FC = () => {
   });
   
   // Fill timetable with scheduled courses
-  Object.values(courseDetails).forEach(details => {
+  Object.entries(courseDetails).forEach(([courseId, details]) => {
     if (details.schedules) {
       details.schedules.forEach(schedule => {
         const day = schedule.day.charAt(0).toUpperCase() + schedule.day.slice(1);
-        const course = data.courses.find(c => c.id === details.courseId);
+        const course = data.courses.find(c => c.id === courseId);
         if (course && !isCourseCompleted(course.id)) {
           timetable[day][schedule.period] = course.name;
         }

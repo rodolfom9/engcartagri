@@ -1,3 +1,4 @@
+
 export type CourseType = "NB" | "NP" | "NE" | "NA";
 
 export interface Course {

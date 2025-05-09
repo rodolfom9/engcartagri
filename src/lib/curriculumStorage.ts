@@ -127,7 +127,8 @@ export const isCourseCompleted = (courseId: string): boolean => {
   return data.completedCourses?.includes(courseId) || false;
 };
 
-// Mock course details (to be replaced with actual data)
+// Course details storage
+const COURSE_DETAILS_KEY = 'curriculumCourseDetails';
 const courseDetailsCache: { [key: string]: any } = {};
 
 export const getCourseDetails = (courseId: string): any | undefined => {
@@ -136,15 +137,21 @@ export const getCourseDetails = (courseId: string): any | undefined => {
 
 export const saveCourseDetails = (details: any): void => {
   courseDetailsCache[details.courseId] = details;
-  localStorage.setItem('curriculumCourseDetails', JSON.stringify(courseDetailsCache));
+  localStorage.setItem(COURSE_DETAILS_KEY, JSON.stringify(courseDetailsCache));
 };
 
 export const loadCourseDetails = (): { [key: string]: any } => {
-  const storedData = localStorage.getItem('curriculumCourseDetails');
-  if (storedData) {
-    Object.assign(courseDetailsCache, JSON.parse(storedData));
+  try {
+    const storedData = localStorage.getItem(COURSE_DETAILS_KEY);
+    if (storedData) {
+      const parsed = JSON.parse(storedData);
+      Object.assign(courseDetailsCache, parsed);
+    }
+    return courseDetailsCache;
+  } catch (error) {
+    console.error("Failed to load course details from local storage:", error);
+    return {};
   }
-  return courseDetailsCache;
 };
 
 // Initialize course details on module load
