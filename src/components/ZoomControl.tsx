@@ -17,25 +17,27 @@ const ZoomControl: React.FC<ZoomControlProps> = ({ zoom, onZoomChange }) => {
   };
 
   return (
-    <div className="flex items-center gap-2 bg-white p-2 rounded-lg shadow-sm">
+    <div className="flex items-center gap-1 bg-white p-1 rounded-md shadow-sm text-xs">
       <Button
-        variant="outline"
-        size="icon"
+        variant="ghost"
+        size="sm"
         onClick={handleZoomOut}
         disabled={zoom <= 50}
+        className="h-5 w-5 p-0"
       >
-        <Minus className="h-4 w-4" />
+        <Minus className="h-3 w-3" />
       </Button>
-      <span className="text-sm font-medium min-w-[4rem] text-center">
+      <span className="font-medium min-w-[2.5rem] text-center">
         {zoom}%
       </span>
       <Button
-        variant="outline"
-        size="icon"
+        variant="ghost"
+        size="sm"
         onClick={handleZoomIn}
         disabled={zoom >= 100}
+        className="h-5 w-5 p-0"
       >
-        <Plus className="h-4 w-4" />
+        <Plus className="h-3 w-3" />
       </Button>
     </div>
   );

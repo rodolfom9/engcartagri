@@ -185,23 +185,23 @@ const CurriculumFlow: React.FC = () => {
   };
 
   return (
-    <div className="p-4 text-sm"> {/* Added text-sm to reduce text size by ~30% */}
-      <div className="mb-6">
+    <div className="px-2 py-0 text-sm"> {/* Apenas padding horizontal, sem padding vertical */}
+      <div className="mb-2"> {/* Reduzi mais a margem inferior */}
         <ProgressBar 
           percentage={calculateCompletedHours()} 
           label="de Carga Horária Cumprida"
         />
       </div>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-3 mb-1"> {/* Reduzi a margem inferior */}
           <TabsTrigger value="flow">Fluxo do Curso</TabsTrigger>
           <TabsTrigger value="schedule">Grade de Horário</TabsTrigger>
           <TabsTrigger value="courses">Lista de Disciplinas</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="flow">
-          <div className="overflow-x-auto overflow-y-hidden bg-gray-50 p-4 rounded-lg border">
-            <div className="flex justify-end mb-2">
+        <TabsContent value="flow" className="mt-0"> {/* Removi a margem superior */}
+          <div className="overflow-x-auto overflow-y-hidden bg-gray-50 p-2 rounded-lg border"> {/* Reduzi o padding */}
+            <div className="flex justify-end mb-1">
               <ZoomControl zoom={zoom} onZoomChange={setZoom} />
             </div>
             <div 
@@ -213,24 +213,26 @@ const CurriculumFlow: React.FC = () => {
                 width: `${(100 / zoom) * 100}%`
               }}
             >
-              {/* Year headers */}
+              {/* Year headers - Ajuste o tamanho das caixas de ano aqui */}
               <div className="flex border border-gray-300 mb-1">
                 {Array.from({ length: maxYear }, (_, i) => (
                   <div 
                     key={`year-${i+1}`} 
                     className="flex-1 text-center p-1 font-semibold border-r border-gray-300 last:border-r-0"
+                    style={{ height: '25px' }} // Ajuste a altura aqui
                   >
                     {`${i+1}º Ano`}
                   </div>
                 ))}
               </div>
               
-              {/* Period headers */}
+              {/* Period headers - Ajuste o tamanho das caixas de período aqui */}
               <div className="flex mb-3">
                 {Array.from({ length: maxPeriod }, (_, i) => (
                   <div 
                     key={`period-${i+1}`} 
                     className="w-[108px] mr-[52px] last:mr-0 text-center p-1 bg-white border border-gray-300 rounded-md shadow-sm"
+                    style={{ height: '25px', lineHeight: '1' }} // Ajuste a altura aqui
                   >
                     {`${i+1}º Período`}
                   </div>
