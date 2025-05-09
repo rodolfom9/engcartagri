@@ -8,6 +8,11 @@ export interface Course {
   hours: string;
   type: CourseType;
   credits: number;
+  professor?: string;
+  schedules?: {
+    day: string;
+    time: string;
+  }[];
 }
 
 export interface Prerequisite {

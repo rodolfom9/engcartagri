@@ -212,8 +212,9 @@ const CurriculumFlow: React.FC = () => {
                       position={position}
                       isCompleted={isCourseCompleted(course.id)}
                       canTake={canTakeCourse(course.id)}
-                      onToggleCompletion={() => toggleCourseCompletion(course.id)}
+                      onToggleCompletion={toggleCourseCompletion}
                       onClick={() => setSelectedCourse(course)}
+                      isFlowTab={activeTab === 'flow'}
                     />
                   );
                 })}
