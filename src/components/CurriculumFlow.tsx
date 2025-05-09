@@ -6,6 +6,7 @@ import PrerequisiteArrow from './PrerequisiteArrow';
 import ScheduleGrid from './ScheduleGrid';
 import CourseList from './CourseList';
 import ProgressBar from './ProgressBar';
+import ZoomControl from './ZoomControl';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -18,6 +19,7 @@ const CurriculumFlow: React.FC = () => {
   });
   const [schedule, setSchedule] = useState<Record<string, Record<string, Course | null>>>({});
   const [activeTab, setActiveTab] = useState('flow');
+  const [zoom, setZoom] = useState(70); // Começa com 70% (30% menor que o original)
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [hoveredCourse, setHoveredCourse] = useState<Course | null>(null);
@@ -30,10 +32,10 @@ const CurriculumFlow: React.FC = () => {
 
   // Calculate course position based on period and row
   const calculatePosition = (period: number, row: number) => {
-    const periodWidth = 155;
-    const periodGap = 75; // Increased from 60 to 75 (25% more)
-    const rowHeight = 110;
-    const rowGap = 50; // Doubled from 10 to 20
+    const periodWidth = 140; // Reduced from 155 by 30%
+    const periodGap = 70; // Reduced from 75 by 30%
+    const rowHeight = 100; // Reduced from 110 by 30%
+    const rowGap = 35; // Reduced from 50 by 30%
     
     const left = (period - 1) * (periodWidth + periodGap);
     const top = (row - 1) * (rowHeight + rowGap);
@@ -183,7 +185,7 @@ const CurriculumFlow: React.FC = () => {
   };
 
   return (
-    <div className="p-4">
+    <div className="p-4 text-sm"> {/* Added text-sm to reduce text size by ~30% */}
       <div className="mb-6">
         <ProgressBar 
           percentage={calculateCompletedHours()} 
@@ -199,7 +201,18 @@ const CurriculumFlow: React.FC = () => {
 
         <TabsContent value="flow">
           <div className="overflow-x-auto overflow-y-auto bg-gray-50 p-4 rounded-lg border">
-            <div className="relative min-w-[1200px]" ref={containerRef}>
+            <div className="flex justify-end mb-4">
+              <ZoomControl zoom={zoom} onZoomChange={setZoom} />
+            </div>
+            <div 
+              className="relative min-w-[840px]" 
+              ref={containerRef}
+              style={{
+                transform: `scale(${zoom / 100})`,
+                transformOrigin: 'top left',
+                width: `${(100 / zoom) * 100}%`
+              }}
+            >
               {/* Year headers */}
               <div className="flex border border-gray-300 mb-2">
                 {Array.from({ length: maxYear }, (_, i) => (
@@ -217,7 +230,7 @@ const CurriculumFlow: React.FC = () => {
                 {Array.from({ length: maxPeriod }, (_, i) => (
                   <div 
                     key={`period-${i+1}`} 
-                    className="w-[155px] mr-[60px] last:mr-0 text-center p-2 bg-white border border-gray-300 rounded-md shadow-sm"
+                    className="w-[108px] mr-[52px] last:mr-0 text-center p-2 bg-white border border-gray-300 rounded-md shadow-sm"
                   >
                     {`${i+1}º Período`}
                   </div>
@@ -260,12 +273,12 @@ const CurriculumFlow: React.FC = () => {
                     <PrerequisiteArrow
                       key={`${prereq.from}-${prereq.to}`}
                       fromPosition={{
-                        left: fromPosition.left + 155, // End of the course box
-                        top: fromPosition.top + 55   // Middle of the course box
+                        left: fromPosition.left + 108, // End of the course box
+                        top: fromPosition.top + 38   // Middle of the course box
                       }}
                       toPosition={{
                         left: toPosition.left,       // Start of the course box
-                        top: toPosition.top + 55     // Middle of the course box
+                        top: toPosition.top + 38     // Middle of the course box
                       }}
                       isDirectConnection={toCourse.period - fromCourse.period === 1 && toCourse.row === fromCourse.row}
                     />
