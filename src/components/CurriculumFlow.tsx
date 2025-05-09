@@ -227,19 +227,25 @@ const CurriculumFlow: React.FC = () => {
               </div>
               
               {/* Period headers - Ajuste o tamanho das caixas de período aqui */}
-              <div className="flex mb-3">
-                {Array.from({ length: maxPeriod }, (_, i) => (
-                  <div 
-                    key={`period-${i+1}`} 
-                    className="w-[108px] mr-[52px] last:mr-0 text-center p-1 bg-white border border-gray-300 rounded-md shadow-sm"
-                    style={{ height: '25px', lineHeight: '1' }} // Ajuste a altura aqui
-                  >
-                    {`${i+1}º Período`}
-                  </div>
-                ))}
+              <div className="flex mb-3 relative" style={{ height: '25px' }}>
+                {Array.from({ length: maxPeriod }, (_, i) => {
+                  const periodPosition = calculatePosition(i + 1, 0);
+                  return (
+                    <div 
+                      key={`period-${i+1}`} 
+                      className="absolute text-center p-1 bg-white border border-gray-300 rounded-md shadow-sm w-[140px]"
+                      style={{ 
+                        left: `${periodPosition.left}px`,
+                        height: '25px', 
+                        lineHeight: '1'
+                      }}
+                    >
+                      {`${i+1}º Período`}
+                    </div>
+                  );
+                })}
               </div>
-              // essa porra ajusta o tamanho do fluxo
-              {/* Courses section */}
+              {/* Courses section, essa porra ajusta o tamanho do fluxo */}
               <div 
                 className="relative"
                 style={{ minHeight: `${Math.max(...curriculumData.courses.map(c => c.row)) * 88 + 90}px` }}
