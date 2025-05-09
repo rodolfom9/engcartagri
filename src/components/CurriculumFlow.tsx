@@ -7,6 +7,7 @@ import PrerequisiteArrow from './PrerequisiteArrow';
 const CurriculumFlow: React.FC = () => {
   const [curriculumData, setCurriculumData] = useState<CurriculumData>({ courses: [], prerequisites: [] });
   const containerRef = useRef<HTMLDivElement>(null);
+  const [refreshCompletion, setRefreshCompletion] = useState(0);
 
   // On mount, load data from local storage
   useEffect(() => {
@@ -71,6 +72,7 @@ const CurriculumFlow: React.FC = () => {
                 key={course.id}
                 course={course}
                 position={position}
+                onStatusChange={() => setRefreshCompletion(prev => prev + 1)}
               />
             );
           })}
