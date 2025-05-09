@@ -64,19 +64,7 @@ const CurriculumFlow: React.FC = () => {
           className="relative"
           style={{ minHeight: `${Math.max(...curriculumData.courses.map(c => c.row)) * 120 + 100}px` }}
         >
-          {/* Render course boxes */}
-          {curriculumData.courses.map((course) => {
-            const position = calculatePosition(course.period, course.row);
-            return (
-              <CourseBox
-                key={course.id}
-                course={course}
-                position={position}
-              />
-            );
-          })}
-          
-          {/* Render prerequisite arrows */}
+          {/* Render prerequisites arrows first so they appear behind courses */}
           {curriculumData.prerequisites.map((prereq) => {
             const fromCourse = curriculumData.courses.find(c => c.id === prereq.from);
             const toCourse = curriculumData.courses.find(c => c.id === prereq.to);
@@ -98,6 +86,18 @@ const CurriculumFlow: React.FC = () => {
                   top: toPosition.top + 55     // Middle of the course box
                 }}
                 isDirectConnection={toCourse.period - fromCourse.period === 1 && toCourse.row === fromCourse.row}
+              />
+            );
+          })}
+          
+          {/* Render course boxes on top of the prerequisite arrows */}
+          {curriculumData.courses.map((course) => {
+            const position = calculatePosition(course.period, course.row);
+            return (
+              <CourseBox
+                key={course.id}
+                course={course}
+                position={position}
               />
             );
           })}

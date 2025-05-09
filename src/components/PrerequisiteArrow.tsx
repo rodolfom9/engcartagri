@@ -17,9 +17,9 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
   toPosition,
   isDirectConnection
 }) => {
-  // Mudança para a cor vermelha para as setas de pré-requisito
+  // Using a consistent arrowWidth for all types of connections
   const arrowColor = '#ea384c'; // Vermelho vibrante
-  const arrowWidth = '2px';
+  const arrowWidth = '2.5px'; // Consistent width for all arrows
   
   if (isDirectConnection) {
     // Conexão direta - linha horizontal simples com gradiente
@@ -57,7 +57,7 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
     
     // Ajuste para evitar que as linhas passem pelo meio das disciplinas
     // As linhas agora passam mais abaixo das disciplinas
-    const midY1 = fromPosition.top + 60; // Aumentado para 60px para passar abaixo das disciplinas
+    const midY1 = fromPosition.top + 80; // Increased to pass further below courses
     const midX2 = toPosition.left - 35;
     
     return (
@@ -86,7 +86,7 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
           }}
         />
         
-        {/* Linha horizontal conectora */}
+        {/* Linha horizontal conectora with jump effect at intersections */}
         <div
           className="absolute z-10"
           style={{
@@ -95,7 +95,8 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
             width: `${Math.abs(midX2 - midX)}px`,
             height: arrowWidth,
             background: arrowColor,
-            opacity: 0.8,
+            backgroundImage: 'repeating-linear-gradient(to right, transparent, transparent 20px, white 20px, white 25px)',
+            backgroundSize: '100% 100%',
           }}
         />
         
@@ -108,7 +109,6 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
             width: arrowWidth,
             height: `${Math.abs(toPosition.top - midY1)}px`,
             background: arrowColor,
-            opacity: 0.9,
           }}
         />
         
@@ -120,7 +120,7 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
             top: `${toPosition.top}px`,
             width: `${toPosition.left - midX2}px`,
             height: arrowWidth,
-            background: `linear-gradient(to right, ${arrowColor}80, ${arrowColor})`,
+            background: `linear-gradient(to right, ${arrowColor}, ${arrowColor})`,
           }}
         />
         
