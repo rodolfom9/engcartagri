@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Course } from '@/types/curriculum';
 import { Button } from '@/components/ui/button';
 import { Check } from 'lucide-react';
@@ -55,33 +55,32 @@ const CourseBox: React.FC<CourseBoxProps> = ({
             Prof. {course.professor}
           </div>
         )}
-        {isFlowTab && (
-          <Button
-            variant="outline"
-            size="sm" 
-            className={`mt-1 py-0 h-6 px-2 text-xs ${isCompleted ? 'bg-green-100 hover:bg-green-200' : 'bg-gray-100 hover:bg-gray-200'}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleCompletion(course.id);
-            }}
-            disabled={!canTake}
-          >
-            {isCompleted ? (
-              <>
-                <Check className="h-3 w-3 mr-1" />
-                <span>Concluída</span>
-              </>
-            ) : (
-              'Marcar como concluída'
-            )}
-          </Button>
-        )}
       </div>
       
-      <div className="flex justify-between bg-gray-100 p-1 text-xs">
+      <div className="flex justify-between items-center bg-gray-100 p-1 text-xs">
         <span>{course.hours}</span>
         <span className="font-semibold">{course.type}</span>
-        <span>{course.credits}</span>
+        <div className="flex items-center gap-1">
+          <span>{course.credits}</span>
+          {isFlowTab && (
+            <Button
+              variant="ghost"
+              size="sm" 
+              className={`py-0 h-5 px-1 text-[10px] ${
+                isCompleted 
+                  ? 'text-green-700 hover:text-green-800 hover:bg-green-100' 
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'
+              }`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleCompletion(course.id);
+              }}
+              disabled={!canTake}
+            >
+              {isCompleted ? 'Concluído' : 'Concluir'}
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );

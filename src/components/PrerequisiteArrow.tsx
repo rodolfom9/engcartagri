@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface Position {
@@ -22,10 +21,10 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
   const arrowWidth = '2.5px'; // Consistent width for all arrows
   
   if (isDirectConnection) {
-    // Conexão direta - linha horizontal simples com gradiente
+    // Conexão direta - linha horizontal simples com gradiente e efeito de pulo
     return (
       <>
-        {/* Linha horizontal com gradiente */}
+        {/* Linha horizontal com gradiente e efeito de pulo */}
         <div
           className="absolute z-10"
           style={{
@@ -42,7 +41,7 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
           className="absolute w-0 h-0 z-20"
           style={{
             left: `${toPosition.left - 10}px`,
-            top: `${toPosition.top - 4}px`, // Ajuste para centralização da seta
+            top: `${toPosition.top - 4}px`,
             borderTop: '4px solid transparent',
             borderBottom: '4px solid transparent',
             borderLeft: `10px solid ${arrowColor}`,
@@ -86,7 +85,7 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
           }}
         />
         
-        {/* Linha horizontal conectora with jump effect at intersections */}
+        {/* Linha horizontal conectora */}
         <div
           className="absolute z-10"
           style={{
@@ -95,8 +94,6 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
             width: `${Math.abs(midX2 - midX)}px`,
             height: arrowWidth,
             background: arrowColor,
-            backgroundImage: 'repeating-linear-gradient(to right, transparent, transparent 20px, white 20px, white 25px)',
-            backgroundSize: '100% 100%',
           }}
         />
         
@@ -129,7 +126,7 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
           className="absolute w-0 h-0 z-20"
           style={{
             left: `${toPosition.left - 10}px`,
-            top: `${toPosition.top - 4}px`, // Ajuste para centralização da seta
+            top: `${toPosition.top - 4}px`,
             borderTop: '4px solid transparent',
             borderBottom: '4px solid transparent',
             borderLeft: `10px solid ${arrowColor}`,

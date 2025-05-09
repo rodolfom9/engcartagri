@@ -35,7 +35,7 @@ const CurriculumFlow: React.FC = () => {
     const periodWidth = 140; // Reduced from 155 by 30%
     const periodGap = 70; // Reduced from 75 by 30%
     const rowHeight = 100; // Reduced from 110 by 30%
-    const rowGap = 35; // Reduced from 50 by 30%
+    const rowGap = 45; // Reduced from 50 by 30%
     
     const left = (period - 1) * (periodWidth + periodGap);
     const top = (row - 1) * (rowHeight + rowGap);
@@ -273,14 +273,15 @@ const CurriculumFlow: React.FC = () => {
                     <PrerequisiteArrow
                       key={`${prereq.from}-${prereq.to}`}
                       fromPosition={{
-                        left: fromPosition.left + 108, // End of the course box
-                        top: fromPosition.top + 38   // Middle of the course box
+                        left: fromPosition.left + 155, // Largura total da box
+                        top: fromPosition.top + 40   // Metade da altura da box
                       }}
                       toPosition={{
-                        left: toPosition.left,       // Start of the course box
-                        top: toPosition.top + 38     // Middle of the course box
+                        left: toPosition.left,       // Início da box
+                        top: toPosition.top + 40     // Metade da altura da box
                       }}
-                      isDirectConnection={toCourse.period - fromCourse.period === 1 && toCourse.row === fromCourse.row}
+                      isDirectConnection={toCourse.period - fromCourse.period === 1 && Math.abs(toCourse.row - fromCourse.row) <= 1}
+                      rowDifference={Math.abs(toCourse.row - fromCourse.row)}
                     />
                   );
                 })}
