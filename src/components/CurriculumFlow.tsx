@@ -1,12 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Course, Prerequisite, CurriculumData } from '@/types/curriculum';
-import { loadCurriculumData, saveCurriculumData } from '@/lib/curriculumStorage';
+import { loadCurriculumData, saveCurriculumData, markCourseCompleted, unmarkCourseCompleted, isCourseCompleted } from '@/lib/curriculumStorage';
 import CourseBox from './CourseBox';
 import PrerequisiteArrow from './PrerequisiteArrow';
+import ScheduleGrid from './ScheduleGrid';
+import CourseList from './CourseList';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const CurriculumFlow: React.FC = () => {
-  const [curriculumData, setCurriculumData] = useState<CurriculumData>({ courses: [], prerequisites: [] });
+  const [curriculumData, setCurriculumData] = useState<CurriculumData>({ 
+    courses: [], 
+    prerequisites: [],
+    completedCourses: []
+  });
+  const [schedule, setSchedule] = useState<Record<string, Record<string, Course | null>>>({});
+  const [activeTab, setActiveTab] = useState('flow');
   const containerRef = useRef<HTMLDivElement>(null);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [hoveredCourse, setHoveredCourse] = useState<Course | null>(null);
 
   // On mount, load data from local storage
   useEffect(() => {
@@ -31,77 +44,278 @@ const CurriculumFlow: React.FC = () => {
   const maxYear = Math.ceil(Math.max(...curriculumData.courses.map(c => c.period)) / 2) || 5;
   const maxPeriod = Math.max(...curriculumData.courses.map(c => c.period)) || 10;
 
+  // Função para verificar se um curso pode ser cursado
+  const canTakeCourse = (courseId: string): boolean => {
+    const prerequisites = curriculumData.prerequisites.filter(p => p.to === courseId);
+    return prerequisites.every(p => isCourseCompleted(p.from));
+  };
+
+  // Função para marcar/desmarcar um curso como completo
+  const toggleCourseCompletion = (courseId: string) => {
+    if (isCourseCompleted(courseId)) {
+      unmarkCourseCompleted(courseId);
+      // Remove o curso do horário se estiver presente
+      const newSchedule = { ...schedule };
+      Object.keys(newSchedule).forEach(day => {
+        Object.keys(newSchedule[day]).forEach(time => {
+          if (newSchedule[day][time]?.id === courseId) {
+            newSchedule[day][time] = null;
+          }
+        });
+      });
+      setSchedule(newSchedule);
+    } else {
+      markCourseCompleted(courseId);
+    }
+    setCurriculumData(loadCurriculumData());
+  };
+
+  // Função para adicionar curso ao horário
+  const handleAddCourse = (course: Course, day: string, time: string) => {
+    // Verifica se o curso já está concluído
+    if (isCourseCompleted(course.id)) {
+      return;
+    }
+    setSchedule(prev => ({
+      ...prev,
+      [day]: {
+        ...prev[day],
+        [time]: course
+      }
+    }));
+  };
+
+  // Função para remover curso do horário
+  const handleRemoveCourse = (day: string, time: string) => {
+    setSchedule(prev => ({
+      ...prev,
+      [day]: {
+        ...prev[day],
+        [time]: null
+      }
+    }));
+  };
+
+  // Função para obter a cor de fundo do curso
+  const getCourseBackground = (course: Course): string => {
+    if (isCourseCompleted(course.id)) {
+      return 'bg-green-100 dark:bg-green-900';
+    }
+    if (!canTakeCourse(course.id)) {
+      return 'bg-gray-100 dark:bg-gray-800';
+    }
+    return 'bg-white dark:bg-gray-700';
+  };
+
+  // Função para obter a cor da borda do curso
+  const getCourseBorder = (course: Course): string => {
+    if (isCourseCompleted(course.id)) {
+      return 'border-green-500';
+    }
+    if (!canTakeCourse(course.id)) {
+      return 'border-gray-300 dark:border-gray-600';
+    }
+    return 'border-blue-500';
+  };
+
+  // Função para obter a cor do texto do curso
+  const getCourseText = (course: Course): string => {
+    if (isCourseCompleted(course.id)) {
+      return 'text-green-700 dark:text-green-300';
+    }
+    if (!canTakeCourse(course.id)) {
+      return 'text-gray-500 dark:text-gray-400';
+    }
+    return 'text-gray-900 dark:text-gray-100';
+  };
+
+  // Função para obter a cor do tipo do curso
+  const getCourseTypeColor = (type: string): string => {
+    switch (type) {
+      case 'NB':
+        return 'text-blue-600 dark:text-blue-400';
+      case 'NP':
+        return 'text-green-600 dark:text-green-400';
+      case 'NE':
+        return 'text-purple-600 dark:text-purple-400';
+      case 'NA':
+        return 'text-orange-600 dark:text-orange-400';
+      default:
+        return 'text-gray-600 dark:text-gray-400';
+    }
+  };
+
+  // Função para obter os pré-requisitos de um curso
+  const getPrerequisites = (courseId: string): Course[] => {
+    return curriculumData.prerequisites
+      .filter(p => p.to === courseId)
+      .map(p => curriculumData.courses.find(c => c.id === p.from))
+      .filter((c): c is Course => c !== undefined);
+  };
+
+  // Função para obter os cursos que dependem de um curso
+  const getDependentCourses = (courseId: string): Course[] => {
+    return curriculumData.prerequisites
+      .filter(p => p.from === courseId)
+      .map(p => curriculumData.courses.find(c => c.id === p.to))
+      .filter((c): c is Course => c !== undefined);
+  };
+
   return (
-    <div className="overflow-x-auto overflow-y-auto bg-gray-50 p-4 rounded-lg border">
-      <div className="relative min-w-[1200px]" ref={containerRef}>
-        {/* Year headers */}
-        <div className="flex border border-gray-300 mb-2">
-          {Array.from({ length: maxYear }, (_, i) => (
-            <div 
-              key={`year-${i+1}`} 
-              className="flex-1 text-center p-2 font-semibold border-r border-gray-300 last:border-r-0"
-            >
-              {`${i+1}º Ano`}
+    <div className="p-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="flow">Fluxo do Curso</TabsTrigger>
+          <TabsTrigger value="schedule">Grade de Horário</TabsTrigger>
+          <TabsTrigger value="courses">Lista de Disciplinas</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="flow">
+          <div className="overflow-x-auto overflow-y-auto bg-gray-50 p-4 rounded-lg border">
+            <div className="relative min-w-[1200px]" ref={containerRef}>
+              {/* Year headers */}
+              <div className="flex border border-gray-300 mb-2">
+                {Array.from({ length: maxYear }, (_, i) => (
+                  <div 
+                    key={`year-${i+1}`} 
+                    className="flex-1 text-center p-2 font-semibold border-r border-gray-300 last:border-r-0"
+                  >
+                    {`${i+1}º Ano`}
+                  </div>
+                ))}
+              </div>
+              
+              {/* Period headers */}
+              <div className="flex mb-6">
+                {Array.from({ length: maxPeriod }, (_, i) => (
+                  <div 
+                    key={`period-${i+1}`} 
+                    className="w-[155px] mr-[60px] last:mr-0 text-center p-2 bg-white border border-gray-300 rounded-md shadow-sm"
+                  >
+                    {`${i+1}º Período`}
+                  </div>
+                ))}
+              </div>
+              
+              {/* Courses section */}
+              <div 
+                className="relative"
+                style={{ minHeight: `${Math.max(...curriculumData.courses.map(c => c.row)) * 120 + 100}px` }}
+              >
+                {/* Render course boxes */}
+                {curriculumData.courses.map((course) => {
+                  const position = calculatePosition(course.period, course.row);
+                  return (
+                    <CourseBox
+                      key={course.id}
+                      course={course}
+                      position={position}
+                      isCompleted={isCourseCompleted(course.id)}
+                      canTake={canTakeCourse(course.id)}
+                      onToggleCompletion={() => toggleCourseCompletion(course.id)}
+                      onClick={() => setSelectedCourse(course)}
+                    />
+                  );
+                })}
+                
+                {/* Render prerequisite arrows */}
+                {curriculumData.prerequisites.map((prereq) => {
+                  const fromCourse = curriculumData.courses.find(c => c.id === prereq.from);
+                  const toCourse = curriculumData.courses.find(c => c.id === prereq.to);
+                  
+                  if (!fromCourse || !toCourse) return null;
+                  
+                  const fromPosition = calculatePosition(fromCourse.period, fromCourse.row);
+                  const toPosition = calculatePosition(toCourse.period, toCourse.row);
+                  
+                  return (
+                    <PrerequisiteArrow
+                      key={`${prereq.from}-${prereq.to}`}
+                      fromPosition={{
+                        left: fromPosition.left + 155, // End of the course box
+                        top: fromPosition.top + 55   // Middle of the course box
+                      }}
+                      toPosition={{
+                        left: toPosition.left,       // Start of the course box
+                        top: toPosition.top + 55     // Middle of the course box
+                      }}
+                      isDirectConnection={toCourse.period - fromCourse.period === 1 && toCourse.row === fromCourse.row}
+                    />
+                  );
+                })}
+              </div>
             </div>
-          ))}
-        </div>
-        
-        {/* Period headers */}
-        <div className="flex mb-6">
-          {Array.from({ length: maxPeriod }, (_, i) => (
-            <div 
-              key={`period-${i+1}`} 
-              className="w-[155px] mr-[60px] last:mr-0 text-center p-2 bg-white border border-gray-300 rounded-md shadow-sm"
-            >
-              {`${i+1}º Período`}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="schedule">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <ScheduleGrid
+              courses={curriculumData.courses}
+              onAddCourse={handleAddCourse}
+              onRemoveCourse={handleRemoveCourse}
+              schedule={schedule}
+            />
+            <CourseList 
+              courses={curriculumData.courses}
+              onToggleCompletion={toggleCourseCompletion}
+            />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="courses">
+          <CourseList 
+            courses={curriculumData.courses}
+            onToggleCompletion={toggleCourseCompletion}
+          />
+        </TabsContent>
+      </Tabs>
+
+      {/* Modal de detalhes do curso */}
+      {selectedCourse && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-lg w-full">
+            <h2 className="text-2xl font-bold mb-4">{selectedCourse.name}</h2>
+            <div className="space-y-2">
+              <p><span className="font-semibold">Período:</span> {selectedCourse.period}º</p>
+              <p><span className="font-semibold">Carga Horária:</span> {selectedCourse.hours}</p>
+              <p><span className="font-semibold">Créditos:</span> {selectedCourse.credits}</p>
+              <p><span className="font-semibold">Tipo:</span> {selectedCourse.type}</p>
+              
+              <div className="mt-4">
+                <h3 className="font-semibold mb-2">Pré-requisitos:</h3>
+                {getPrerequisites(selectedCourse.id).length > 0 ? (
+                  <ul className="list-disc pl-5">
+                    {getPrerequisites(selectedCourse.id).map(prereq => (
+                      <li key={prereq.id} className={isCourseCompleted(prereq.id) ? 'text-green-600' : 'text-red-600'}>
+                        {prereq.name} {isCourseCompleted(prereq.id) ? '(Completo)' : '(Pendente)'}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-gray-500">Nenhum pré-requisito</p>
+                )}
+              </div>
+
+              <div className="mt-4">
+                <h3 className="font-semibold mb-2">Cursos que dependem deste:</h3>
+                {getDependentCourses(selectedCourse.id).length > 0 ? (
+                  <ul className="list-disc pl-5">
+                    {getDependentCourses(selectedCourse.id).map(dep => (
+                      <li key={dep.id}>{dep.name}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-gray-500">Nenhum curso depende deste</p>
+                )}
+              </div>
             </div>
-          ))}
+            <div className="mt-6 flex justify-end">
+              <Button onClick={() => setSelectedCourse(null)}>Fechar</Button>
+            </div>
+          </div>
         </div>
-        
-        {/* Courses section */}
-        <div 
-          className="relative"
-          style={{ minHeight: `${Math.max(...curriculumData.courses.map(c => c.row)) * 120 + 100}px` }}
-        >
-          {/* Render course boxes */}
-          {curriculumData.courses.map((course) => {
-            const position = calculatePosition(course.period, course.row);
-            return (
-              <CourseBox
-                key={course.id}
-                course={course}
-                position={position}
-              />
-            );
-          })}
-          
-          {/* Render prerequisite arrows */}
-          {curriculumData.prerequisites.map((prereq) => {
-            const fromCourse = curriculumData.courses.find(c => c.id === prereq.from);
-            const toCourse = curriculumData.courses.find(c => c.id === prereq.to);
-            
-            if (!fromCourse || !toCourse) return null;
-            
-            const fromPosition = calculatePosition(fromCourse.period, fromCourse.row);
-            const toPosition = calculatePosition(toCourse.period, toCourse.row);
-            
-            return (
-              <PrerequisiteArrow
-                key={`${prereq.from}-${prereq.to}`}
-                fromPosition={{
-                  left: fromPosition.left + 155, // End of the course box
-                  top: fromPosition.top + 55   // Middle of the course box
-                }}
-                toPosition={{
-                  left: toPosition.left,       // Start of the course box
-                  top: toPosition.top + 55     // Middle of the course box
-                }}
-                isDirectConnection={toCourse.period - fromCourse.period === 1 && toCourse.row === fromCourse.row}
-              />
-            );
-          })}
-        </div>
-      </div>
+      )}
     </div>
   );
 };

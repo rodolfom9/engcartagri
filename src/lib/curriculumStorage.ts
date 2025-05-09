@@ -1,4 +1,3 @@
-
 import { CurriculumData, Course, Prerequisite } from '@/types/curriculum';
 
 // Default data for initial app state
@@ -119,7 +118,8 @@ const defaultCurriculumData: CurriculumData = {
     { from: "banco", to: "sig1" },
     { from: "banco", to: "cad1" },
     { from: "est", to: "geoest" },
-  ]
+  ],
+  completedCourses: [] // Array vazio inicial para cursos completados
 };
 
 const STORAGE_KEY = 'curriculum_data';
@@ -153,7 +153,7 @@ export const updateCourse = (courseId: string, updatedCourse: Course): Curriculu
   
   if (index !== -1) {
     data.courses[index] = updatedCourse;
-    saveCurriculumData(data);
+  saveCurriculumData(data);
   }
   
   return data;
@@ -185,10 +185,10 @@ export const addPrerequisite = (from: string, to: string): CurriculumData => {
   );
   
   if (!exists) {
-    data.prerequisites.push({ from, to });
-    saveCurriculumData(data);
+  data.prerequisites.push({ from, to });
+  saveCurriculumData(data);
   }
-  
+
   return data;
 };
 
@@ -230,4 +230,26 @@ export const generateCourseId = (courseName: string): string => {
   }
   
   return id;
+};
+
+// Check if a course is completed
+export const isCourseCompleted = (courseId: string): boolean => {
+  const data = loadCurriculumData();
+  return data.completedCourses.includes(courseId);
+};
+
+// Mark a course as completed
+export const markCourseCompleted = (courseId: string) => {
+  const data = loadCurriculumData();
+  if (!data.completedCourses.includes(courseId)) {
+    data.completedCourses.push(courseId);
+    saveCurriculumData(data);
+  }
+};
+
+// Unmark a course as completed
+export const unmarkCourseCompleted = (courseId: string) => {
+  const data = loadCurriculumData();
+  data.completedCourses = data.completedCourses.filter(id => id !== courseId);
+  saveCurriculumData(data);
 };

@@ -1,4 +1,3 @@
-
 export type CourseType = "NB" | "NP" | "NE" | "NA";
 
 export interface Course {
@@ -19,6 +18,7 @@ export interface Prerequisite {
 export interface CurriculumData {
   courses: Course[];
   prerequisites: Prerequisite[];
+  completedCourses: string[];
 }
 
 // Cores para os tipos de curso e elementos visuais
