@@ -20,57 +20,57 @@ const Index = () => {
 
   return (
     <div className="h-screen w-full flex flex-col">
-      <div className="container mx-auto px-4 py-4">
-        <div className="text-center mb-4">
-          <h1 className="text-3xl font-bold mb-2">Curricular Flow Builder</h1>
-          <p className="text-lg text-gray-600">
+      <div className="container mx-auto px-2 py-2">
+        <div className="text-center mb-2">
+          <h1 className="text-2xl font-bold">Curricular Flow Builder</h1>
+          <p className="text-sm text-gray-600">
             Create, visualize and manage your curriculum structure
           </p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Courses</CardTitle>
-              <CardDescription>Total registered courses</CardDescription>
+        <div className="grid grid-cols-3 gap-2 mb-2">
+          <Card className="p-0">
+            <CardHeader className="p-2">
+              <CardTitle className="text-sm">Courses</CardTitle>
+              <CardDescription className="text-xs">Total registered</CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{courseCount}</p>
+            <CardContent className="p-2 pt-0">
+              <p className="text-xl font-bold">{courseCount}</p>
             </CardContent>
           </Card>
           
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Prerequisites</CardTitle>
-              <CardDescription>Total prerequisite connections</CardDescription>
+          <Card className="p-0">
+            <CardHeader className="p-2">
+              <CardTitle className="text-sm">Prerequisites</CardTitle>
+              <CardDescription className="text-xs">Total connections</CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{prerequisiteCount}</p>
+            <CardContent className="p-2 pt-0">
+              <p className="text-xl font-bold">{prerequisiteCount}</p>
             </CardContent>
           </Card>
           
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Course Types</CardTitle>
-              <CardDescription>Classification colors</CardDescription>
+          <Card className="p-0">
+            <CardHeader className="p-2">
+              <CardTitle className="text-sm">Course Types</CardTitle>
+              <CardDescription className="text-xs">Colors</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="w-4 h-4 bg-course-nb"></span>
-                  <span>NB (Basic)</span>
+            <CardContent className="p-2 pt-0">
+              <div className="grid grid-cols-2 gap-1 text-xs">
+                <div className="flex items-center gap-1">
+                  <span className="w-3 h-3 bg-course-nb"></span>
+                  <span>NB</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-4 h-4 bg-course-np"></span>
-                  <span>NP (Professional)</span>
+                <div className="flex items-center gap-1">
+                  <span className="w-3 h-3 bg-course-np"></span>
+                  <span>NP</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-4 h-4 bg-course-ne"></span>
-                  <span>NE (Specific)</span>
+                <div className="flex items-center gap-1">
+                  <span className="w-3 h-3 bg-course-ne"></span>
+                  <span>NE</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-4 h-4 bg-course-optional"></span>
-                  <span>NA (Optional)</span>
+                <div className="flex items-center gap-1">
+                  <span className="w-3 h-3 bg-course-optional"></span>
+                  <span>NA</span>
                 </div>
               </div>
             </CardContent>
@@ -79,11 +79,11 @@ const Index = () => {
       </div>
       
       <Tabs defaultValue="view" className="flex-1 flex flex-col">
-        <div className="container mx-auto px-4">
-          <TabsList className="grid grid-cols-3 mb-4">
-            <TabsTrigger value="view">View Curriculum</TabsTrigger>
-            <TabsTrigger value="manage">Manage Data</TabsTrigger>
-            <TabsTrigger value="import-export">Import/Export</TabsTrigger>
+        <div className="container mx-auto px-2">
+          <TabsList className="grid grid-cols-3 mb-2">
+            <TabsTrigger value="view" className="text-sm py-1">View Curriculum</TabsTrigger>
+            <TabsTrigger value="manage" className="text-sm py-1">Manage Data</TabsTrigger>
+            <TabsTrigger value="import-export" className="text-sm py-1">Import/Export</TabsTrigger>
           </TabsList>
         </div>
         
@@ -92,13 +92,13 @@ const Index = () => {
         </TabsContent>
         
         <TabsContent value="manage" className="flex-1">
-          <div className="container mx-auto px-4 py-4">
+          <div className="container mx-auto px-2">
             <ManageCurriculum onDataChange={handleDataChange} />
           </div>
         </TabsContent>
         
         <TabsContent value="import-export" className="flex-1">
-          <div className="container mx-auto px-4 py-4">
+          <div className="container mx-auto px-2">
             <ImportExport onImport={handleDataChange} />
           </div>
         </TabsContent>

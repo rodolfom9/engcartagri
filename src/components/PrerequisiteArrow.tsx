@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface Position {
@@ -17,15 +16,12 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
   toPosition,
   isDirectConnection
 }) => {
-  // Using a consistent arrowWidth for all types of connections
-  const arrowColor = '#ea384c'; // Vermelho vibrante
-  const arrowWidth = '2.5px'; // Consistent width for all arrows
+  const arrowColor = '#ea384c';
+  const arrowWidth = '2px';
   
   if (isDirectConnection) {
-    // Conexão direta - linha horizontal simples com gradiente
     return (
       <>
-        {/* Linha horizontal com gradiente */}
         <div
           className="absolute z-10"
           style={{
@@ -37,44 +33,37 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
           }}
         />
         
-        {/* Ponta da seta centralizada verticalmente */}
         <div
           className="absolute w-0 h-0 z-20"
           style={{
-            left: `${toPosition.left - 10}px`,
-            top: `${toPosition.top - 4}px`, // Ajuste para centralização da seta
-            borderTop: '4px solid transparent',
-            borderBottom: '4px solid transparent',
-            borderLeft: `10px solid ${arrowColor}`,
-            filter: 'drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.2))',
+            left: `${toPosition.left - 8}px`,
+            top: `${toPosition.top - 3}px`,
+            borderTop: '3px solid transparent',
+            borderBottom: '3px solid transparent',
+            borderLeft: `8px solid ${arrowColor}`,
+            filter: 'drop-shadow(0px 1px 1px rgba(0, 0, 0, 0.1))',
           }}
         />
       </>
     );
   } else {
-    // Conexão complexa com curvas ajustadas para evitar passar pelas disciplinas
-    const midX = fromPosition.left + 30;
-    
-    // Ajuste para evitar que as linhas passem pelo meio das disciplinas
-    // As linhas agora passam mais abaixo das disciplinas
-    const midY1 = fromPosition.top + 80; // Increased to pass further below courses
-    const midX2 = toPosition.left - 35;
+    const midX = fromPosition.left + 20;
+    const midY1 = fromPosition.top + 60;
+    const midX2 = toPosition.left - 25;
     
     return (
       <>
-        {/* Linha do ponto de origem */}
         <div
           className="absolute z-10"
           style={{
             left: `${fromPosition.left}px`,
             top: `${fromPosition.top}px`,
-            width: `30px`,
+            width: `20px`,
             height: arrowWidth,
             background: arrowColor,
           }}
         />
         
-        {/* Linha vertical para baixo */}
         <div
           className="absolute z-10"
           style={{
@@ -86,7 +75,6 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
           }}
         />
         
-        {/* Linha horizontal conectora with jump effect at intersections */}
         <div
           className="absolute z-10"
           style={{
@@ -95,12 +83,11 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
             width: `${Math.abs(midX2 - midX)}px`,
             height: arrowWidth,
             background: arrowColor,
-            backgroundImage: 'repeating-linear-gradient(to right, transparent, transparent 20px, white 20px, white 25px)',
+            backgroundImage: 'repeating-linear-gradient(to right, transparent, transparent 15px, white 15px, white 20px)',
             backgroundSize: '100% 100%',
           }}
         />
         
-        {/* Linha vertical para cima/baixo até o nível do destino */}
         <div
           className="absolute z-10"
           style={{
@@ -112,7 +99,6 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
           }}
         />
         
-        {/* Linha horizontal final até o destino */}
         <div
           className="absolute z-10"
           style={{
@@ -124,16 +110,15 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
           }}
         />
         
-        {/* Ponta da seta centralizada verticalmente */}
         <div
           className="absolute w-0 h-0 z-20"
           style={{
-            left: `${toPosition.left - 10}px`,
-            top: `${toPosition.top - 4}px`, // Ajuste para centralização da seta
-            borderTop: '4px solid transparent',
-            borderBottom: '4px solid transparent',
-            borderLeft: `10px solid ${arrowColor}`,
-            filter: 'drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.2))',
+            left: `${toPosition.left - 8}px`,
+            top: `${toPosition.top - 3}px`,
+            borderTop: '3px solid transparent',
+            borderBottom: '3px solid transparent',
+            borderLeft: `8px solid ${arrowColor}`,
+            filter: 'drop-shadow(0px 1px 1px rgba(0, 0, 0, 0.1))',
           }}
         />
       </>
