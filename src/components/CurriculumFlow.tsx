@@ -71,29 +71,39 @@ const CurriculumFlow: React.FC = () => {
   };
 
   // Função para adicionar curso ao horário
-  const handleAddCourse = (course: Course, day: string, time: string) => {
+  const handleAddCourse = (course: Course) => {
     // Verifica se o curso já está concluído
     if (isCourseCompleted(course.id)) {
       return;
     }
-    setSchedule(prev => ({
-      ...prev,
-      [day]: {
-        ...prev[day],
-        [time]: course
+
+    // Verifica se o curso tem horários definidos
+    if (!course.schedules || course.schedules.length === 0) {
+      return;
+    }
+
+    // Adiciona o curso em todos os seus horários
+    const newSchedule = { ...schedule };
+    course.schedules.forEach(({ day, time }) => {
+      if (!newSchedule[day]) {
+        newSchedule[day] = {};
       }
-    }));
+      newSchedule[day][time] = course;
+    });
+    setSchedule(newSchedule);
   };
 
   // Função para remover curso do horário
-  const handleRemoveCourse = (day: string, time: string) => {
-    setSchedule(prev => ({
-      ...prev,
-      [day]: {
-        ...prev[day],
-        [time]: null
-      }
-    }));
+  const handleRemoveCourse = (course: Course) => {
+    const newSchedule = { ...schedule };
+    Object.keys(newSchedule).forEach(day => {
+      Object.keys(newSchedule[day]).forEach(time => {
+        if (newSchedule[day][time]?.id === course.id) {
+          newSchedule[day][time] = null;
+        }
+      });
+    });
+    setSchedule(newSchedule);
   };
 
   // Função para obter a cor de fundo do curso
@@ -252,14 +262,38 @@ const CurriculumFlow: React.FC = () => {
         <TabsContent value="schedule">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <ScheduleGrid
-              courses={curriculumData.courses}
-              onAddCourse={handleAddCourse}
-              onRemoveCourse={handleRemoveCourse}
+              courses={curriculumData.courses.filter(course => !isCourseCompleted(course.id))}
               schedule={schedule}
+              onRemoveCourse={(day, time) => {
+                const course = schedule[day]?.[time];
+                if (course) {
+                  handleRemoveCourse(course);
+                }
+              }}
             />
             <CourseList 
               courses={curriculumData.courses}
               onToggleCompletion={toggleCourseCompletion}
+              showCheckbox={true}
+              hideCompleted={true}
+              onCheckboxChange={(course) => {
+                // Verifica se o curso já está em algum horário
+                let isInSchedule = false;
+                Object.keys(schedule).forEach(day => {
+                  Object.keys(schedule[day] || {}).forEach(time => {
+                    if (schedule[day]?.[time]?.id === course.id) {
+                      isInSchedule = true;
+                    }
+                  });
+                });
+
+                // Se estiver na grade, remove; se não estiver, adiciona
+                if (isInSchedule) {
+                  handleRemoveCourse(course);
+                } else {
+                  handleAddCourse(course);
+                }
+              }}
             />
           </div>
         </TabsContent>
@@ -268,6 +302,7 @@ const CurriculumFlow: React.FC = () => {
           <CourseList 
             courses={curriculumData.courses}
             onToggleCompletion={toggleCourseCompletion}
+            hideCompleted={false}
           />
         </TabsContent>
       </Tabs>

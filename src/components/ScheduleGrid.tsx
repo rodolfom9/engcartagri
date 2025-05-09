@@ -5,16 +5,14 @@ import { X } from 'lucide-react';
 
 interface ScheduleGridProps {
   courses: Course[];
-  onAddCourse: (course: Course, day: string, time: string) => void;
-  onRemoveCourse: (day: string, time: string) => void;
   schedule: Record<string, Record<string, Course | null>>;
+  onRemoveCourse: (day: string, time: string) => void;
 }
 
 const ScheduleGrid: React.FC<ScheduleGridProps> = ({
   courses,
-  onAddCourse,
-  onRemoveCourse,
-  schedule
+  schedule,
+  onRemoveCourse
 }) => {
   const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
   const times = ['08:00', '10:00', '14:00'];
@@ -59,6 +57,11 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
                         <div className="text-sm text-gray-500">
                           {course.type} - {course.hours}
                         </div>
+                        {course.professor && (
+                          <div className="text-sm text-gray-500">
+                            Prof. {course.professor}
+                          </div>
+                        )}
                       </div>
                     </div>
                   ) : (
