@@ -9,7 +9,107 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      courses: {
+        Row: {
+          id: string
+          name: string
+          period: number
+          row: number
+          hours: string
+          type: string
+          credits: number
+          professor?: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          name: string
+          period: number
+          row: number
+          hours: string
+          type: string
+          credits: number
+          professor?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          period?: number
+          row?: number
+          hours?: string
+          type?: string
+          credits?: number
+          professor?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      prerequisites: {
+        Row: {
+          id: number
+          from: string
+          to: string
+          created_at: string
+        }
+        Insert: {
+          id?: number
+          from: string
+          to: string
+          created_at?: string
+        }
+        Update: {
+          id?: number
+          from?: string
+          to?: string
+          created_at?: string
+        }
+      }
+      completed_courses: {
+        Row: {
+          id: number
+          course_id: string
+          user_id?: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: number
+          course_id: string
+          user_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: number
+          course_id?: string
+          user_id?: string | null
+          created_at?: string
+        }
+      }
+      course_schedules: {
+        Row: {
+          id: number
+          course_id: string
+          day: string
+          time: string
+          created_at: string
+        }
+        Insert: {
+          id?: number
+          course_id: string
+          day: string
+          time: string
+          created_at?: string
+        }
+        Update: {
+          id?: number
+          course_id?: string
+          day?: string
+          time?: string
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -102,18 +202,16 @@ export type TablesUpdate<
     : never
 
 export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
+  PublicEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof Database },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
-  }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+  EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+> = PublicEnumNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : PublicEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][PublicEnumNameOrOptions]
     : never
 
 export type CompositeTypes<

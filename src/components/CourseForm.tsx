@@ -253,9 +253,9 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
                     <SelectValue placeholder="Horário" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="08:00">08:00</SelectItem>
-                    <SelectItem value="10:00">10:00</SelectItem>
-                    <SelectItem value="14:00">14:00</SelectItem>
+                    <SelectItem value="07:00">07:00</SelectItem>
+                    <SelectItem value="08:45">08:45</SelectItem>
+                    <SelectItem value="10:30">10:30</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

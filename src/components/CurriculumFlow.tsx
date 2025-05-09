@@ -1,15 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Course, Prerequisite, CurriculumData } from '@/types/curriculum';
-import { loadCurriculumData, saveCurriculumData, markCourseCompleted, unmarkCourseCompleted, isCourseCompleted } from '@/lib/curriculumStorage';
+import { Course, Prerequisite, CurriculumData } from '../types/curriculum';
+import { 
+  loadCurriculumData, 
+  loadCurriculumDataAsync, 
+  markCourseCompleted, 
+  unmarkCourseCompleted, 
+  isCourseCompleted,
+  initializeData
+} from '../lib/curriculumStorage';
 import CourseBox from './CourseBox';
 import PrerequisiteArrow from './PrerequisiteArrow';
 import ScheduleGrid from './ScheduleGrid';
 import CourseList from './CourseList';
 import ProgressBar from './ProgressBar';
 import ZoomControl from './ZoomControl';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from './ui/button';
+import { Checkbox } from './ui/checkbox';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Loader2 } from 'lucide-react';
 
 const CurriculumFlow: React.FC = () => {
   const [curriculumData, setCurriculumData] = useState<CurriculumData>({ 
@@ -24,11 +32,31 @@ const CurriculumFlow: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [hoveredCourse, setHoveredCourse] = useState<Course | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // On mount, load data from local storage
+  // On mount, load data from Supabase
   useEffect(() => {
-    const data = loadCurriculumData();
-    setCurriculumData(data);
+    const fetchData = async () => {
+      setLoading(true);
+      
+      try {
+        // Inicializar dados no Supabase se necessário
+        await initializeData();
+        
+        // Carregar dados do Supabase
+        const data = await loadCurriculumDataAsync();
+        setCurriculumData(data);
+      } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+        // Fallback para dados locais em caso de erro
+        const localData = loadCurriculumData();
+        setCurriculumData(localData);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
   }, []);
 
   // Calculate course position based on period and row
@@ -183,6 +211,15 @@ const CurriculumFlow: React.FC = () => {
     
     return totalHours === 0 ? 0 : (completedHours / totalHours) * 100;
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Carregando dados do currículo...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="px-2 py-0 text-sm"> {/* Apenas padding horizontal, sem padding vertical */}

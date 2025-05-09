@@ -15,7 +15,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
   onRemoveCourse
 }) => {
   const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
-  const times = ['08:00', '10:00', '14:00'];
+  const times = ['07:00', '08:45', '10:15'];
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">

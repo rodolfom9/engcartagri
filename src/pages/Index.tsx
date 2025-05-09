@@ -1,79 +1,81 @@
-import React, { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import CurriculumFlow from '@/components/CurriculumFlow';
-import ManageCurriculum from '@/components/ManageCurriculum';
-import ImportExport from '@/components/ImportExport';
-import { loadCurriculumData } from '@/lib/curriculumStorage';
+import React, { useState, useEffect } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import CurriculumFlow from '../components/CurriculumFlow';
+import ManageCurriculum from '../components/ManageCurriculum';
+import ImportExport from '../components/ImportExport';
+import { loadCurriculumData, loadCurriculumDataAsync } from '../lib/curriculumStorage';
 
 const Index = () => {
   const [refreshKey, setRefreshKey] = useState(0);
+  const [coursesCount, setCoursesCount] = useState(0);
+  const [prerequisitesCount, setPrerequisitesCount] = useState(0);
+  
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const data = await loadCurriculumDataAsync();
+        setCoursesCount(data.courses.length);
+        setPrerequisitesCount(data.prerequisites.length);
+      } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+        const localData = loadCurriculumData();
+        setCoursesCount(localData.courses.length);
+        setPrerequisitesCount(localData.prerequisites.length);
+      }
+    };
+    
+    fetchData();
+  }, [refreshKey]);
   
   const handleDataChange = () => {
     setRefreshKey(prev => prev + 1);
   };
 
-  const data = loadCurriculumData();
-  const courseCount = data.courses.length;
-  const prerequisiteCount = data.prerequisites.length;
-
   return (
-    <div className="h-screen w-full flex flex-col">
-      <div className="container mx-auto px-4 py-2">
-        <div className="text-center mb-2">
-          <h1 className="text-2xl font-bold mb-1">Curricular Flow Builder</h1>
-          <p className="text-sm text-gray-600">
-            Create, visualize and manage your curriculum structure
-          </p>
+    <div className="flex flex-col min-h-screen">
+      <header className="border-b">
+        <div className="container mx-auto p-4">
+          <h1 className="text-2xl font-bold">Gerenciador de Currículo</h1>
         </div>
+      </header>
+      
+      <div className="container mx-auto px-4 py-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="p-4">
+            <CardTitle className="text-lg">Estatísticas</CardTitle>
+            <CardDescription>Visão geral do currículo</CardDescription>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="border rounded-lg p-4 text-center">
+                <p className="text-sm text-muted-foreground">Disciplinas</p>
+                <p className="text-3xl font-bold">{coursesCount}</p>
+              </div>
+              <div className="border rounded-lg p-4 text-center">
+                <p className="text-sm text-muted-foreground">Pré-requisitos</p>
+                <p className="text-3xl font-bold">{prerequisitesCount}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <Card className="flex flex-row items-center h-22 py-0">
-            <CardHeader className="pb-0 pt-0 pr-0">
-              <CardTitle className="text-sm">Courses</CardTitle>
-              <CardDescription className="text-xs">Total registered courses</CardDescription>
-            </CardHeader>
-            <CardContent className="py-0 flex items-center">
-              <p className="text-xl font-bold">{courseCount}</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="flex flex-row items-center h-22 py-0">
-            <CardHeader className="pb-0 pt-0 pr-0">
-              <CardTitle className="text-sm">Prerequisites</CardTitle>
-              <CardDescription className="text-xs">Total prerequisite connections</CardDescription>
-            </CardHeader>
-            <CardContent className="py-0 flex items-center">
-              <p className="text-xl font-bold">{prerequisiteCount}</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="h-22 py-0">
-            <CardHeader className="pb-0 pt-1">
-              <CardTitle className="text-sm">Course Types</CardTitle>
-              <CardDescription className="text-xs">Classification colors</CardDescription>
-            </CardHeader>
-            <CardContent className="py-0 grid grid-cols-2 gap-x-2 gap-y-0">
-              <div className="flex items-center gap-1">
-                <span className="w-3 h-3 bg-course-nb"></span>
-                <span className="text-xs">NB (Basic)</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="w-3 h-3 bg-course-np"></span>
-                <span className="text-xs">NP (Professional)</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="w-3 h-3 bg-course-ne"></span>
-                <span className="text-xs">NE (Specific)</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="w-3 h-3 bg-course-optional"></span>
-                <span className="text-xs">NA (Optional)</span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <Card className="md:col-span-2">
+          <CardHeader className="p-4">
+            <CardTitle className="text-lg">Informações</CardTitle>
+            <CardDescription>Sobre o gerenciador de currículo</CardDescription>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            <p>
+              Este gerenciador permite visualizar o fluxo do curso, marcar disciplinas como concluídas, 
+              visualizar pré-requisitos e gerenciar sua grade de horários.
+            </p>
+            <p className="mt-2">
+              Na aba "Gerenciar Dados" você pode adicionar, editar ou remover disciplinas e pré-requisitos.
+            </p>
+          </CardContent>
+        </Card>
       </div>
       
       <Tabs defaultValue="view" className="flex-1 flex flex-col">
