@@ -16,25 +16,9 @@ export interface Prerequisite {
   to: string;
 }
 
-// New types for course details
-export interface CourseDetails {
-  id: string;
-  courseId: string;
-  professor: string;
-  schedules: CourseSchedule[];
-  code: string;
-}
-
-export interface CourseSchedule {
-  day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday';
-  period: 1 | 2 | 3;
-}
-
-// Add completedCourses to CurriculumData
 export interface CurriculumData {
   courses: Course[];
   prerequisites: Prerequisite[];
-  completedCourses: string[]; // Array of course IDs that are completed
 }
 
 // Cores para os tipos de curso e elementos visuais

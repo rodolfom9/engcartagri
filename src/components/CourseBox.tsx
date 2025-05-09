@@ -1,97 +1,69 @@
 
-import React from 'react';
-import { Button } from '@/components/ui/button';
+import React, { useState } from 'react';
+import { Course, courseColors } from '@/types/curriculum';
+import { Button } from './ui/button';
 import { Check } from 'lucide-react';
-import { isCourseCompleted, markCourseCompleted, unmarkCourseCompleted } from '@/lib/curriculumStorage';
-import { Course } from '@/types/curriculum';
 
 interface CourseBoxProps {
-  id?: string;
-  name?: string;
-  type?: string;
-  course?: Course;
-  position?: { left: number; top: number };
-  onStatusChange?: () => void;
+  course: Course;
+  position: { left: number; top: number };
 }
 
-const CourseBox: React.FC<CourseBoxProps> = ({ id, name, type, course, position, onStatusChange }) => {
-  // Use course object props if provided, otherwise use individual props
-  const courseId = course ? course.id : id || '';
-  const courseName = course ? course.name : name || '';
-  const courseType = course ? course.type : type || '';
+const CourseBox: React.FC<CourseBoxProps> = ({ course, position }) => {
+  const [completed, setCompleted] = useState(false);
   
-  const completed = isCourseCompleted(courseId);
-  
-  const typeColor = 
-    courseType === 'NB' ? 'bg-course-nb' : 
-    courseType === 'NP' ? 'bg-course-np' : 
-    courseType === 'NE' ? 'bg-course-ne' : 'bg-course-optional';
-  
-  // If completed, override the background color to green
-  const bgColor = completed ? 'bg-green-200' : typeColor;
-  
-  const toggleCompleted = () => {
-    if (completed) {
-      unmarkCourseCompleted(courseId);
-    } else {
-      markCourseCompleted(courseId);
+  // Map course type to CSS class
+  const getCourseTypeClass = (type: string) => {
+    if (completed) return 'bg-green-200 text-green-800'; // Green when completed
+    
+    switch (type) {
+      case 'NB': return 'bg-course-nb';
+      case 'NP': return 'bg-course-np';
+      case 'NE': return 'bg-course-ne';
+      case 'NA': return 'bg-course-optional';
+      default: return 'bg-white';
     }
-    if (onStatusChange) onStatusChange();
   };
   
-  if (position) {
-    // Render in curriculum flow with positioning
-    return (
-      <div 
-        className={`rounded-md ${bgColor} p-3 shadow-md absolute w-[155px]`}
-        style={{
-          left: `${position.left}px`,
-          top: `${position.top}px`,
-          height: '110px'
-        }}
-      >
-        <div className="flex flex-col h-full">
-          <div className="flex-1">
-            <h3 className="text-sm font-bold truncate" title={courseName}>
-              {courseName}
-            </h3>
-            <p className="text-xs opacity-80">{courseType}</p>
-          </div>
-          <div className="flex justify-end mt-2">
-            <Button 
-              size="sm" 
-              variant={completed ? "outline" : "default"} 
-              className="h-7 w-7 p-0 rounded-full"
-              onClick={toggleCompleted}
-              title={completed ? "Mark as incomplete" : "Mark as completed"}
-            >
-              <Check className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  // Regular box without positioning
+  const handleMarkCompleted = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCompleted(!completed);
+  };
+
   return (
-    <div className={`rounded-md ${bgColor} p-3 shadow flex flex-col h-full`}>
-      <div className="flex-1 overflow-hidden">
-        <h3 className="text-sm font-bold truncate" title={courseName}>
-          {courseName}
-        </h3>
-        <p className="text-xs opacity-80">{courseType}</p>
-      </div>
-      <div className="flex justify-end mt-2">
-        <Button 
+    <div
+      className="absolute w-[155px] bg-white border border-gray-300 rounded shadow-sm overflow-hidden animate-fade-in"
+      style={{
+        left: `${position.left}px`,
+        top: `${position.top}px`,
+      }}
+    >
+      <div 
+        className={`p-2 relative text-center font-medium text-gray-800 flex flex-col items-center justify-center ${getCourseTypeClass(course.type)}`}
+        style={{ height: '80px' }}
+      >
+        {course.name}
+        <Button
+          variant="outline"
           size="sm" 
-          variant={completed ? "outline" : "default"} 
-          className="h-7 w-7 p-0 rounded-full"
-          onClick={toggleCompleted}
-          title={completed ? "Mark as incomplete" : "Mark as completed"}
+          className={`mt-1 py-0 h-6 px-2 text-xs ${completed ? 'bg-green-100 hover:bg-green-200' : 'bg-gray-100 hover:bg-gray-200'}`}
+          onClick={handleMarkCompleted}
         >
-          <Check className="h-4 w-4" />
+          {completed ? (
+            <>
+              <Check className="h-3 w-3 mr-1" />
+              <span>Concluída</span>
+            </>
+          ) : (
+            'Marcar como concluída'
+          )}
         </Button>
+      </div>
+      
+      <div className="flex justify-between bg-gray-100 p-1 text-xs">
+        <span>{course.hours}</span>
+        <span className="font-semibold">{course.type}</span>
+        <span>{course.credits}</span>
       </div>
     </div>
   );
