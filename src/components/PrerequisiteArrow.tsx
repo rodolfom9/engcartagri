@@ -56,9 +56,11 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
     const midX = fromPosition.left + 30;
     
     // Ajuste para evitar que as linhas passem pelo meio das disciplinas
-    // As linhas agora passam mais abaixo das disciplinas
-    const midY1 = fromPosition.top + 80; // Increased to pass further below courses
+    // Criando uma meia lua no ponto de cruzamento
+    const midY1 = fromPosition.top + 90; // Increased for a more pronounced curve
     const midX2 = toPosition.left - 35;
+    
+    const curveHeight = 20; // Height of the half-moon curve
     
     return (
       <>
@@ -86,7 +88,7 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
           }}
         />
         
-        {/* Linha horizontal conectora with jump effect at intersections */}
+        {/* Linha horizontal conectora com efeito de meia-lua onde as linhas se cruzam */}
         <div
           className="absolute z-10"
           style={{
@@ -95,8 +97,8 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
             width: `${Math.abs(midX2 - midX)}px`,
             height: arrowWidth,
             background: arrowColor,
-            backgroundImage: 'repeating-linear-gradient(to right, transparent, transparent 20px, white 20px, white 25px)',
-            backgroundSize: '100% 100%',
+            borderRadius: '50%', // Create curved appearance
+            borderTop: `${curveHeight}px solid transparent`, // Create curve effect
           }}
         />
         
