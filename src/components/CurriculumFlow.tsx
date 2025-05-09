@@ -5,6 +5,7 @@ import CourseBox from './CourseBox';
 import PrerequisiteArrow from './PrerequisiteArrow';
 import ScheduleGrid from './ScheduleGrid';
 import CourseList from './CourseList';
+import ProgressBar from './ProgressBar';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -171,8 +172,24 @@ const CurriculumFlow: React.FC = () => {
       .filter((c): c is Course => c !== undefined);
   };
 
+  // Função para calcular a porcentagem de carga horária concluída
+  const calculateCompletedHours = (): number => {
+    const totalHours = curriculumData.courses.reduce((acc: number, course: Course) => acc + parseInt(course.hours || '0', 10), 0);
+    const completedHours = curriculumData.courses
+      .filter(course => isCourseCompleted(course.id))
+      .reduce((acc: number, course: Course) => acc + parseInt(course.hours || '0', 10), 0);
+    
+    return totalHours === 0 ? 0 : (completedHours / totalHours) * 100;
+  };
+
   return (
     <div className="p-4">
+      <div className="mb-6">
+        <ProgressBar 
+          percentage={calculateCompletedHours()} 
+          label="de Carga Horária Cumprida"
+        />
+      </div>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="flow">Fluxo do Curso</TabsTrigger>
