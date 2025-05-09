@@ -200,8 +200,8 @@ const CurriculumFlow: React.FC = () => {
         </TabsList>
 
         <TabsContent value="flow">
-          <div className="overflow-x-auto overflow-y-auto bg-gray-50 p-4 rounded-lg border">
-            <div className="flex justify-end mb-4">
+          <div className="overflow-x-auto overflow-y-hidden bg-gray-50 p-4 rounded-lg border">
+            <div className="flex justify-end mb-2">
               <ZoomControl zoom={zoom} onZoomChange={setZoom} />
             </div>
             <div 
@@ -214,11 +214,11 @@ const CurriculumFlow: React.FC = () => {
               }}
             >
               {/* Year headers */}
-              <div className="flex border border-gray-300 mb-2">
+              <div className="flex border border-gray-300 mb-1">
                 {Array.from({ length: maxYear }, (_, i) => (
                   <div 
                     key={`year-${i+1}`} 
-                    className="flex-1 text-center p-2 font-semibold border-r border-gray-300 last:border-r-0"
+                    className="flex-1 text-center p-1 font-semibold border-r border-gray-300 last:border-r-0"
                   >
                     {`${i+1}º Ano`}
                   </div>
@@ -226,21 +226,21 @@ const CurriculumFlow: React.FC = () => {
               </div>
               
               {/* Period headers */}
-              <div className="flex mb-6">
+              <div className="flex mb-3">
                 {Array.from({ length: maxPeriod }, (_, i) => (
                   <div 
                     key={`period-${i+1}`} 
-                    className="w-[108px] mr-[52px] last:mr-0 text-center p-2 bg-white border border-gray-300 rounded-md shadow-sm"
+                    className="w-[108px] mr-[52px] last:mr-0 text-center p-1 bg-white border border-gray-300 rounded-md shadow-sm"
                   >
                     {`${i+1}º Período`}
                   </div>
                 ))}
               </div>
-              
+              // essa porra ajusta o tamanho do fluxo
               {/* Courses section */}
               <div 
                 className="relative"
-                style={{ minHeight: `${Math.max(...curriculumData.courses.map(c => c.row)) * 120 + 100}px` }}
+                style={{ minHeight: `${Math.max(...curriculumData.courses.map(c => c.row)) * 88 + 90}px` }}
               >
                 {/* Render course boxes */}
                 {curriculumData.courses.map((course) => {

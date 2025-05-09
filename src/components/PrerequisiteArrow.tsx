@@ -1,14 +1,17 @@
 import React from 'react';
 
+// Define o tipo para as coordenadas de posição
 interface Position {
-  left: number;
-  top: number;
+  left: number;  // Posição horizontal em pixels
+  top: number;   // Posição vertical em pixels
 }
 
+// Props do componente de seta
 interface PrerequisiteArrowProps {
-  fromPosition: Position;
-  toPosition: Position;
-  isDirectConnection: boolean;
+  fromPosition: Position;      // Posição inicial da seta (disciplina de origem)
+  toPosition: Position;        // Posição final da seta (disciplina de destino)
+  isDirectConnection: boolean; // Indica se é uma conexão direta (mesma linha) ou não
+  rowDifference?: number;      // Diferença entre as linhas (opcional)
 }
 
 const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
@@ -16,15 +19,15 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
   toPosition,
   isDirectConnection
 }) => {
-  // Using a consistent arrowWidth for all types of connections
-  const arrowColor = '#ea384c'; // Vermelho vibrante
-  const arrowWidth = '2.5px'; // Consistent width for all arrows
+  // Configurações visuais padrão para todas as setas
+  const arrowColor = '#ea384c'; // Cor vermelha vibrante para todas as setas
+  const arrowWidth = '2.5px';   // Espessura consistente para todas as setas
   
   if (isDirectConnection) {
-    // Conexão direta - linha horizontal simples com gradiente e efeito de pulo
+    // Para conexões na mesma linha, usa uma seta horizontal simples
     return (
       <>
-        {/* Linha horizontal com gradiente e efeito de pulo */}
+        {/* Linha horizontal principal com gradiente suave */}
         <div
           className="absolute z-10"
           style={{
@@ -36,7 +39,7 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
           }}
         />
         
-        {/* Ponta da seta centralizada verticalmente */}
+        {/* Ponta da seta triangular no final da linha */}
         <div
           className="absolute w-0 h-0 z-20"
           style={{
@@ -45,23 +48,22 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
             borderTop: '4px solid transparent',
             borderBottom: '4px solid transparent',
             borderLeft: `10px solid ${arrowColor}`,
-            filter: 'drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.2))',
+            filter: 'drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.2))', // Sombra suave para dar profundidade
           }}
         />
       </>
     );
   } else {
-    // Conexão complexa com curvas ajustadas para evitar passar pelas disciplinas
-    const midX = fromPosition.left + 30;
+    // Para conexões entre linhas diferentes, cria um caminho com múltiplos segmentos
     
-    // Ajuste para evitar que as linhas passem pelo meio das disciplinas
-    // As linhas agora passam mais abaixo das disciplinas
-    const midY1 = fromPosition.top + 80; // Increased to pass further below courses
-    const midX2 = toPosition.left - 35;
+    // Define os pontos de controle para o caminho da seta
+    const midX = fromPosition.left + 30;    // Ponto médio horizontal inicial
+    const midY1 = fromPosition.top + 80;    // Ponto médio vertical (abaixo da box de origem)
+    const midX2 = toPosition.left - 35;     // Ponto médio horizontal final
     
     return (
       <>
-        {/* Linha do ponto de origem */}
+        {/* 1. Linha inicial horizontal saindo da origem */}
         <div
           className="absolute z-10"
           style={{
@@ -73,7 +75,7 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
           }}
         />
         
-        {/* Linha vertical para baixo */}
+        {/* 2. Linha vertical descendo da origem */}
         <div
           className="absolute z-10"
           style={{
@@ -85,7 +87,7 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
           }}
         />
         
-        {/* Linha horizontal conectora */}
+        {/* 3. Linha horizontal conectora entre as disciplinas */}
         <div
           className="absolute z-10"
           style={{
@@ -97,7 +99,7 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
           }}
         />
         
-        {/* Linha vertical para cima/baixo até o nível do destino */}
+        {/* 4. Linha vertical subindo até o destino */}
         <div
           className="absolute z-10"
           style={{
@@ -109,7 +111,7 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
           }}
         />
         
-        {/* Linha horizontal final até o destino */}
+        {/* 5. Linha horizontal final chegando no destino */}
         <div
           className="absolute z-10"
           style={{
@@ -121,7 +123,7 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
           }}
         />
         
-        {/* Ponta da seta centralizada verticalmente */}
+        {/* 6. Ponta da seta no final do caminho */}
         <div
           className="absolute w-0 h-0 z-20"
           style={{
