@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -14,7 +13,11 @@ interface ManageCurriculumProps {
 }
 
 const ManageCurriculum: React.FC<ManageCurriculumProps> = ({ onDataChange }) => {
-  const [curriculumData, setCurriculumData] = useState<CurriculumData>({ courses: [], prerequisites: [] });
+  const [curriculumData, setCurriculumData] = useState<CurriculumData>({ 
+    courses: [], 
+    prerequisites: [],
+    completedCourses: [] 
+  });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState<'course' | 'prerequisite'>('course');
   const [editingCourse, setEditingCourse] = useState<Course | undefined>(undefined);

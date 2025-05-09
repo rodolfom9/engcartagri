@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Course, Prerequisite, CurriculumData } from '@/types/curriculum';
 import { loadCurriculumData, saveCurriculumData } from '@/lib/curriculumStorage';
@@ -5,7 +6,11 @@ import CourseBox from './CourseBox';
 import PrerequisiteArrow from './PrerequisiteArrow';
 
 const CurriculumFlow: React.FC = () => {
-  const [curriculumData, setCurriculumData] = useState<CurriculumData>({ courses: [], prerequisites: [] });
+  const [curriculumData, setCurriculumData] = useState<CurriculumData>({ 
+    courses: [], 
+    prerequisites: [],
+    completedCourses: [] 
+  });
   const containerRef = useRef<HTMLDivElement>(null);
   const [refreshCompletion, setRefreshCompletion] = useState(0);
 
@@ -52,7 +57,7 @@ const CurriculumFlow: React.FC = () => {
           {Array.from({ length: maxPeriod }, (_, i) => (
             <div 
               key={`period-${i+1}`} 
-              className="w-[155px] mr-[60px] last:mr-0 text-center p-2 bg-white border border-gray-300 rounded-md shadow-sm"
+              className="w-[155px] mr-[75px] last:mr-0 text-center p-2 bg-white border border-gray-300 rounded-md shadow-sm"
             >
               {`${i+1}º Período`}
             </div>

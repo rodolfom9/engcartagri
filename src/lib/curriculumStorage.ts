@@ -1,3 +1,4 @@
+
 import { CurriculumData } from '@/types/curriculum';
 
 const CURRICULUM_DATA_KEY = 'curriculumData';
@@ -34,6 +35,16 @@ export const clearCurriculumData = (): void => {
   }
 };
 
+// Function to generate course ID from course name
+export const generateCourseId = (courseName: string): string => {
+  // Create ID from name (simplified version)
+  return courseName
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '') + '-' + Date.now().toString().slice(-6);
+};
+
 // Function to add a new course
 export const addCourse = (course: any): void => {
   const data = loadCurriculumData();
@@ -42,10 +53,10 @@ export const addCourse = (course: any): void => {
 };
 
 // Function to update an existing course
-export const updateCourse = (updatedCourse: any): void => {
+export const updateCourse = (courseId: string, updatedCourse: any): void => {
   const data = loadCurriculumData();
   data.courses = data.courses.map(course =>
-    course.id === updatedCourse.id ? updatedCourse : course
+    course.id === courseId ? updatedCourse : course
   );
   saveCurriculumData(data);
 };
@@ -61,9 +72,14 @@ export const deleteCourse = (courseId: string): void => {
 };
 
 // Function to add a new prerequisite
-export const addPrerequisite = (prerequisite: any): void => {
+export const addPrerequisite = (from: string, to: string): void => {
   const data = loadCurriculumData();
-  data.prerequisites.push(prerequisite);
+  data.prerequisites.push({ from, to });
+  saveCurriculumData(data);
+};
+
+// Function to import curriculum data
+export const importCurriculumData = (data: CurriculumData): void => {
   saveCurriculumData(data);
 };
 
