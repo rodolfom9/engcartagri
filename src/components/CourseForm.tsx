@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,19 +16,17 @@ interface CourseFormProps {
 
 const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel }) => {
   const { toast } = useToast();
-  const [course, setCourse] = useState<Course>(
-    initialCourse || {
-      id: '',
-      name: '',
-      period: 1,
-      row: 1,
-      hours: '',
-      type: 'NB' as CourseType,
-      credits: 0,
-      professor: '',
-      schedules: []
-    }
-  );
+  const [course, setCourse] = useState<Course>({
+    id: initialCourse?.id || '',
+    name: initialCourse?.name || '',
+    period: initialCourse?.period || 1,
+    row: initialCourse?.row || 1,
+    hours: initialCourse?.hours || '27',
+    type: initialCourse?.type || 'NB',
+    credits: initialCourse?.credits || 2,
+    professor: initialCourse?.professor || '',
+    schedules: initialCourse?.schedules || []
+  });
 
   const [scheduleCount, setScheduleCount] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -191,9 +188,12 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
       
       console.log('Submitting course with schedules:', updatedCourse);
       
-      // Generate ID for new courses
-      if (!isEditing) {
+      // Generate ID for new courses only if not provided
+      if (!isEditing && !updatedCourse.id) {
         updatedCourse.id = generateCourseId(updatedCourse.name);
+      }
+      
+      if (!isEditing) {
         await addCourse(updatedCourse);
         toast({
           title: "Sucesso",
@@ -219,34 +219,44 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="id">Código da Disciplina</Label>
+          <Input
+            id="id"
+            value={course.id}
+            onChange={(e) => setCourse({ ...course, id: e.target.value })}
+            placeholder="Ex: MAT001"
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="name">Nome da Disciplina</Label>
+          <Input
+            id="name"
+            value={course.name}
+            onChange={(e) => setCourse({ ...course, name: e.target.value })}
+            placeholder="Ex: Cálculo I"
+            required
+          />
+        </div>
+      </div>
       <div className="space-y-2">
-        <Label htmlFor="name">Nome da Disciplina</Label>
+        <Label htmlFor="period">Período</Label>
         <Input 
-          id="name" 
-          name="name" 
-          value={course.name} 
-          onChange={handleChange}
-          placeholder="Digite o nome da disciplina" 
-          className={errors.name ? "border-red-500" : ""}
+          id="period" 
+          name="period" 
+          type="number" 
+          min={1}
+          max={12}
+          value={course.period} 
+          onChange={handleNumberChange}
+          className={errors.period ? "border-red-500" : ""}
         />
-        {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
+        {errors.period && <p className="text-xs text-red-500">{errors.period}</p>}
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="period">Período</Label>
-          <Input 
-            id="period" 
-            name="period" 
-            type="number" 
-            min={1}
-            max={12}
-            value={course.period} 
-            onChange={handleNumberChange}
-            className={errors.period ? "border-red-500" : ""}
-          />
-          {errors.period && <p className="text-xs text-red-500">{errors.period}</p>}
-        </div>
         <div className="space-y-2">
           <Label htmlFor="row">Linha</Label>
           <Input 
@@ -260,6 +270,18 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
             className={errors.row ? "border-red-500" : ""}
           />
           {errors.row && <p className="text-xs text-red-500">{errors.row}</p>}
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="credits">Créditos</Label>
+          <Input 
+            id="credits" 
+            name="credits" 
+            type="number" 
+            value={course.credits} 
+            onChange={handleNumberChange}
+            className={errors.credits ? "border-red-500" : ""}
+          />
+          {errors.credits && <p className="text-xs text-red-500">{errors.credits}</p>}
         </div>
       </div>
 
