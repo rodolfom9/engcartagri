@@ -122,8 +122,6 @@ export const saveCourseToSupabase = async (course: Course): Promise<void> => {
       throw new Error('Usuário não autenticado');
     }
 
-    console.log('Usuário autenticado:', session.user.id);
-
     // Preparar os dados do curso
     const courseData = {
       id: course.id,
@@ -139,8 +137,6 @@ export const saveCourseToSupabase = async (course: Course): Promise<void> => {
       updated_at: new Date().toISOString()
     };
 
-    console.log('Dados do curso a serem salvos:', courseData);
-
     // Tentar inserir ou atualizar o curso
     const { error: upsertError } = await supabase
       .from('disciplinas')
@@ -153,22 +149,6 @@ export const saveCourseToSupabase = async (course: Course): Promise<void> => {
 
     // Se houver horários para salvar
     if (course.schedules && course.schedules.length > 0) {
-      // Preparar dados do horário conforme a estrutura da tabela
-      const scheduleData = {
-        disciplina_id: course.id,
-        nome: course.name,
-        num_aulas: course.schedules.length,
-        day1: course.schedules[0]?.day || null,
-        time1: course.schedules[0]?.time || null,
-        day2: course.schedules[1]?.day || null,
-        time2: course.schedules[1]?.time || null,
-        day3: course.schedules[2]?.day || null,
-        time3: course.schedules[2]?.time || null,
-        created_at: new Date().toISOString()
-      };
-
-      console.log('Dados do horário a serem salvos:', scheduleData);
-
       try {
         // Primeiro, remover horário existente
         const { error: deleteError } = await supabase
@@ -181,10 +161,23 @@ export const saveCourseToSupabase = async (course: Course): Promise<void> => {
           throw deleteError;
         }
 
+        // Preparar dados do horário conforme a estrutura exata da tabela
+        const scheduleData = {
+          disciplina_id: course.id,
+          day1: course.schedules[0]?.day || null,
+          time1: course.schedules[0]?.time || null,
+          day2: course.schedules[1]?.day || null,
+          time2: course.schedules[1]?.time || null,
+          day3: course.schedules[2]?.day || null,
+          time3: course.schedules[2]?.time || null
+        };
+
+        console.log('Tentando salvar horários:', scheduleData);
+
         // Inserir novo horário
         const { error: scheduleError } = await supabase
           .from('horarios')
-          .insert([scheduleData]);
+          .insert(scheduleData);
 
         if (scheduleError) {
           console.error('Erro ao inserir horário:', scheduleError);

@@ -82,46 +82,32 @@ export type Database = {
       }
       horarios: {
         Row: {
-          created_at: string
           disciplina_id: string
-          id: string
-          nome: string
-          num_aulas: number
           day1: string | null
           time1: string | null
           day2: string | null
           time2: string | null
           day3: string | null
           time3: string | null
-          updated_at?: string | null
+          created_at: string
         }
         Insert: {
-          created_at?: string
           disciplina_id: string
-          id?: string
-          nome: string
-          num_aulas: number
           day1?: string | null
           time1?: string | null
           day2?: string | null
           time2?: string | null
           day3?: string | null
           time3?: string | null
-          updated_at?: string | null
         }
         Update: {
-          created_at?: string
           disciplina_id?: string
-          id?: string
-          nome?: string
-          num_aulas?: number
           day1?: string | null
           time1?: string | null
           day2?: string | null
           time2?: string | null
           day3?: string | null
           time3?: string | null
-          updated_at?: string | null
         }
         Relationships: [
           {
@@ -130,7 +116,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "disciplinas"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
       prerequisitos: {
