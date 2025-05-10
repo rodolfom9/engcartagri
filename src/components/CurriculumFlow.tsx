@@ -18,6 +18,7 @@ import { Button } from './ui/button';
 import { Checkbox } from './ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const CurriculumFlow: React.FC = () => {
   const [curriculumData, setCurriculumData] = useState<CurriculumData>({ 
@@ -57,6 +58,52 @@ const CurriculumFlow: React.FC = () => {
     };
     
     fetchData();
+    
+    // Set up realtime subscriptions for Supabase
+    const coursesSubscription = supabase
+      .channel('curriculum-changes-courses')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'disciplinas' },
+        (payload) => {
+          console.log('Courses change detected:', payload);
+          // Reload data when changes are detected
+          loadCurriculumDataAsync().then(data => setCurriculumData(data));
+        }
+      )
+      .subscribe();
+    
+    const prerequisitesSubscription = supabase
+      .channel('curriculum-changes-prerequisites')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'prerequisitos' },
+        (payload) => {
+          console.log('Prerequisites change detected:', payload);
+          // Reload data when changes are detected
+          loadCurriculumDataAsync().then(data => setCurriculumData(data));
+        }
+      )
+      .subscribe();
+    
+    const completedCoursesSubscription = supabase
+      .channel('curriculum-changes-completed')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'disciplinas_concluidas' },
+        (payload) => {
+          console.log('Completed courses change detected:', payload);
+          // Reload data when changes are detected
+          loadCurriculumDataAsync().then(data => setCurriculumData(data));
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(coursesSubscription);
+      supabase.removeChannel(prerequisitesSubscription);
+      supabase.removeChannel(completedCoursesSubscription);
+    };
   }, []);
 
   // Calculate course position based on period and row
@@ -82,23 +129,30 @@ const CurriculumFlow: React.FC = () => {
   };
 
   // Função para marcar/desmarcar um curso como completo
-  const toggleCourseCompletion = (courseId: string) => {
-    if (isCourseCompleted(courseId)) {
-      unmarkCourseCompleted(courseId);
-      // Remove o curso do horário se estiver presente
-      const newSchedule = { ...schedule };
-      Object.keys(newSchedule).forEach(day => {
-        Object.keys(newSchedule[day]).forEach(time => {
-          if (newSchedule[day][time]?.id === courseId) {
-            newSchedule[day][time] = null;
-          }
+  const toggleCourseCompletion = async (courseId: string) => {
+    try {
+      if (isCourseCompleted(courseId)) {
+        await unmarkCourseCompleted(courseId);
+        // Remove o curso do horário se estiver presente
+        const newSchedule = { ...schedule };
+        Object.keys(newSchedule).forEach(day => {
+          Object.keys(newSchedule[day] || {}).forEach(time => {
+            if (newSchedule[day]?.[time]?.id === courseId) {
+              newSchedule[day][time] = null;
+            }
+          });
         });
-      });
-      setSchedule(newSchedule);
-    } else {
-      markCourseCompleted(courseId);
+        setSchedule(newSchedule);
+      } else {
+        await markCourseCompleted(courseId);
+      }
+      
+      // Update local state - this is now handled by the realtime subscription
+      // But we keep it for immediate UI feedback
+      setCurriculumData(loadCurriculumData());
+    } catch (error) {
+      console.error('Error toggling course completion:', error);
     }
-    setCurriculumData(loadCurriculumData());
   };
 
   // Função para adicionar curso ao horário

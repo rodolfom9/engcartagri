@@ -9,106 +9,144 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      courses: {
+      disciplinas: {
         Row: {
+          created_at: string
+          credits: number
+          hours: string
           id: string
           name: string
           period: number
+          professor: string | null
           row: number
-          hours: string
           type: string
-          credits: number
-          professor?: string | null
-          created_at: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
+          created_at?: string
+          credits: number
+          hours: string
           id: string
           name: string
           period: number
-          row: number
-          hours: string
-          type: string
-          credits: number
           professor?: string | null
-          created_at?: string
+          row: number
+          type: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
+          created_at?: string
+          credits?: number
+          hours?: string
           id?: string
           name?: string
           period?: number
-          row?: number
-          hours?: string
-          type?: string
-          credits?: number
           professor?: string | null
-          created_at?: string
+          row?: number
+          type?: string
           updated_at?: string
+          user_id?: string | null
         }
+        Relationships: []
       }
-      prerequisites: {
+      disciplinas_concluidas: {
         Row: {
-          id: number
-          from: string
-          to: string
           created_at: string
+          disciplina_id: string
+          id: string
+          user_id: string
         }
         Insert: {
-          id?: number
-          from: string
-          to: string
           created_at?: string
+          disciplina_id: string
+          id?: string
+          user_id: string
         }
         Update: {
-          id?: number
-          from?: string
-          to?: string
           created_at?: string
+          disciplina_id?: string
+          id?: string
+          user_id?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "disciplinas_concluidas_disciplina_id_fkey"
+            columns: ["disciplina_id"]
+            isOneToOne: false
+            referencedRelation: "disciplinas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
-      completed_courses: {
+      horarios: {
         Row: {
-          id: number
-          course_id: string
-          user_id?: string | null
           created_at: string
-        }
-        Insert: {
-          id?: number
-          course_id: string
-          user_id?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: number
-          course_id?: string
-          user_id?: string | null
-          created_at?: string
-        }
-      }
-      course_schedules: {
-        Row: {
-          id: number
-          course_id: string
           day: string
+          disciplina_id: string
+          id: string
           time: string
-          created_at: string
         }
         Insert: {
-          id?: number
-          course_id: string
-          day: string
-          time: string
           created_at?: string
+          day: string
+          disciplina_id: string
+          id?: string
+          time: string
         }
         Update: {
-          id?: number
-          course_id?: string
+          created_at?: string
           day?: string
+          disciplina_id?: string
+          id?: string
           time?: string
-          created_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "horarios_disciplina_id_fkey"
+            columns: ["disciplina_id"]
+            isOneToOne: false
+            referencedRelation: "disciplinas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prerequisitos: {
+        Row: {
+          created_at: string
+          from_disciplina: string
+          id: string
+          to_disciplina: string
+        }
+        Insert: {
+          created_at?: string
+          from_disciplina: string
+          id?: string
+          to_disciplina: string
+        }
+        Update: {
+          created_at?: string
+          from_disciplina?: string
+          id?: string
+          to_disciplina?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prerequisitos_from_disciplina_fkey"
+            columns: ["from_disciplina"]
+            isOneToOne: false
+            referencedRelation: "disciplinas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prerequisitos_to_disciplina_fkey"
+            columns: ["to_disciplina"]
+            isOneToOne: false
+            referencedRelation: "disciplinas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -202,16 +240,18 @@ export type TablesUpdate<
     : never
 
 export type Enums<
-  PublicEnumNameOrOptions extends
+  DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof Database },
-  EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = PublicEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : PublicEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][PublicEnumNameOrOptions]
+> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<

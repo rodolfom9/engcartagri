@@ -1,7 +1,11 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Course } from '@/types/curriculum';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface ScheduleGridProps {
   courses: Course[];
@@ -14,8 +18,53 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
   schedule,
   onRemoveCourse
 }) => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [horarios, setHorarios] = useState<any[]>([]);
   const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
   const times = ['07:00', '08:45', '10:15'];
+
+  useEffect(() => {
+    // Initial fetch of horarios
+    const fetchHorarios = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('horarios')
+          .select('*');
+          
+        if (error) throw error;
+        setHorarios(data || []);
+      } catch (error) {
+        console.error('Error fetching horarios:', error);
+      }
+    };
+    
+    fetchHorarios();
+
+    // Set up real-time subscription
+    const horarioSubscription = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'horarios'
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setHorarios((current) => [...current, payload.new]);
+          } else if (payload.eventType === 'DELETE') {
+            setHorarios((current) => current.filter(h => h.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(horarioSubscription);
+    };
+  }, []);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
@@ -79,4 +128,4 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
   );
 };
 
-export default ScheduleGrid; 
+export default ScheduleGrid;

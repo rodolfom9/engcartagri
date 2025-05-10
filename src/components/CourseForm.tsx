@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -5,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Course, CourseType } from '@/types/curriculum';
 import { generateCourseId, addCourse, updateCourse } from '@/lib/curriculumStorage';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CourseFormProps {
   initialCourse?: Course;
@@ -30,6 +32,7 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
   );
 
   const [scheduleCount, setScheduleCount] = useState(0);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     // Determinar número de aulas baseado na carga horária
@@ -46,11 +49,29 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setCourse(prev => ({ ...prev, [name]: value }));
+    
+    // Clear error when field is updated
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = {...prev};
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setCourse(prev => ({ ...prev, [name]: parseInt(value) || 0 }));
+    
+    // Clear error when field is updated
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = {...prev};
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
   const handleTypeChange = (value: string) => {
@@ -74,58 +95,93 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
         newSchedules[index] = { day: '', time: '' };
       }
       newSchedules[index][field] = value;
+      
+      // Clear schedule errors
+      if (errors[`schedule-${index}`]) {
+        setErrors(prev => {
+          const newErrors = {...prev};
+          delete newErrors[`schedule-${index}`];
+          return newErrors;
+        });
+      }
+      
       return { ...prev, schedules: newSchedules };
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    
+    // Required fields validation
+    if (!course.name) newErrors.name = "O nome da disciplina é obrigatório";
+    if (!course.hours) newErrors.hours = "A carga horária é obrigatória";
+    
+    // Professor validation (at least 3 characters)
+    if (course.professor && course.professor.length < 3) {
+      newErrors.professor = "O nome do professor deve ter pelo menos 3 caracteres";
+    }
+    
+    // Schedule validation
+    if (scheduleCount > 0) {
+      const schedules = course.schedules || [];
+      for (let i = 0; i < scheduleCount; i++) {
+        const schedule = schedules[i];
+        if (!schedule || !schedule.day || !schedule.time) {
+          newErrors[`schedule-${i}`] = "Horário incompleto";
+        }
+      }
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
-    if (!course.name || !course.hours || !course.professor) {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate form
+    if (!validateForm()) {
       toast({
-        title: "Validation Error",
-        description: "Por favor, preencha todos os campos obrigatórios",
+        title: "Erro de validação",
+        description: "Por favor, corrija os erros no formulário",
         variant: "destructive"
       });
       return;
     }
-
-    // Validar horários
-    if (scheduleCount > 0) {
-      const schedules = course.schedules || [];
-      if (schedules.length !== scheduleCount || 
-          schedules.some(s => !s.day || !s.time)) {
+    
+    try {
+      // Check authentication
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) {
         toast({
-          title: "Validation Error",
-          description: "Por favor, preencha todos os horários",
+          title: "Erro de autenticação",
+          description: "Você precisa estar logado para salvar disciplinas",
           variant: "destructive"
         });
         return;
       }
-    }
-
-    try {
+      
       // Generate ID for new courses
       if (!isEditing) {
         course.id = generateCourseId(course.name);
-        addCourse(course);
+        await addCourse(course);
         toast({
-          title: "Success",
+          title: "Sucesso",
           description: "Disciplina adicionada com sucesso",
         });
       } else {
-        updateCourse(course.id, course);
+        await updateCourse(course.id, course);
         toast({
-          title: "Success",
+          title: "Sucesso",
           description: "Disciplina atualizada com sucesso",
         });
       }
 
       onSave(course);
-    } catch (error) {
+    } catch (error: any) {
       toast({
-        title: "Error",
-        description: "Falha ao salvar a disciplina",
+        title: "Erro",
+        description: error.message || "Falha ao salvar a disciplina",
         variant: "destructive"
       });
     }
@@ -141,8 +197,9 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
           value={course.name} 
           onChange={handleChange}
           placeholder="Digite o nome da disciplina" 
-          required
+          className={errors.name ? "border-red-500" : ""}
         />
+        {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -156,8 +213,9 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
             max={12}
             value={course.period} 
             onChange={handleNumberChange}
-            required
+            className={errors.period ? "border-red-500" : ""}
           />
+          {errors.period && <p className="text-xs text-red-500">{errors.period}</p>}
         </div>
         <div className="space-y-2">
           <Label htmlFor="row">Linha</Label>
@@ -169,8 +227,9 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
             max={20}
             value={course.row} 
             onChange={handleNumberChange}
-            required
+            className={errors.row ? "border-red-500" : ""}
           />
+          {errors.row && <p className="text-xs text-red-500">{errors.row}</p>}
         </div>
       </div>
 
@@ -182,8 +241,9 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
           value={course.professor} 
           onChange={handleChange}
           placeholder="Nome do professor" 
-          required
+          className={errors.professor ? "border-red-500" : ""}
         />
+        {errors.professor && <p className="text-xs text-red-500">{errors.professor}</p>}
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -193,7 +253,7 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
             value={course.hours} 
             onValueChange={handleHoursChange}
           >
-            <SelectTrigger>
+            <SelectTrigger className={errors.hours ? "border-red-500" : ""}>
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
             <SelectContent>
@@ -202,6 +262,7 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
               <SelectItem value="81h">81h (3 aulas)</SelectItem>
             </SelectContent>
           </Select>
+          {errors.hours && <p className="text-xs text-red-500">{errors.hours}</p>}
         </div>
         <div className="space-y-2">
           <Label>Tipo</Label>
@@ -232,7 +293,7 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
                   value={course.schedules?.[index]?.day || ''}
                   onValueChange={(value) => handleScheduleChange(index, 'day', value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className={errors[`schedule-${index}`] ? "border-red-500" : ""}>
                     <SelectValue placeholder="Dia" />
                   </SelectTrigger>
                   <SelectContent>
@@ -249,7 +310,7 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
                   value={course.schedules?.[index]?.time || ''}
                   onValueChange={(value) => handleScheduleChange(index, 'time', value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className={errors[`schedule-${index}`] ? "border-red-500" : ""}>
                     <SelectValue placeholder="Horário" />
                   </SelectTrigger>
                   <SelectContent>
@@ -259,6 +320,9 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
                   </SelectContent>
                 </Select>
               </div>
+              {errors[`schedule-${index}`] && (
+                <p className="text-xs text-red-500 col-span-2">{errors[`schedule-${index}`]}</p>
+              )}
             </div>
           ))}
         </div>

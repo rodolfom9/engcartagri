@@ -1,84 +1,237 @@
+
 import { CurriculumData, Course, Prerequisite } from '../types/curriculum';
 import { defaultCurriculumData } from '../data/courses';
-import {
-  loadCurriculumDataFromSupabase,
-  saveCourseToSupabase,
-  deleteCourseFromSupabase,
-  addPrerequisiteToSupabase,
-  removePrerequisiteFromSupabase,
-  markCourseCompletedInSupabase,
-  unmarkCourseCompletedInSupabase,
-  initializeSupabaseData
-} from './supabaseService';
+import { supabase } from '../integrations/supabase/client';
 
 const STORAGE_KEY = 'curriculum_data';
 
 // Inicializar dados do Supabase
 export const initializeData = async (): Promise<void> => {
   try {
-    await initializeSupabaseData();
+    const { data: existingCourses, error } = await supabase
+      .from('disciplinas')
+      .select('id')
+      .limit(1);
+
+    if (error) throw error;
+
+    // If no courses exist, initialize with default data
+    if (!existingCourses || existingCourses.length === 0) {
+      await importDefaultDataToSupabase();
+    }
   } catch (error) {
     console.error('Erro ao inicializar dados do Supabase:', error);
   }
 };
 
-// Load curriculum data from Supabase or use localStorage as fallback
-export const loadCurriculumData = (): CurriculumData => {
+// Import default data to Supabase
+const importDefaultDataToSupabase = async (): Promise<void> => {
   try {
-    // Para carregar do Supabase, use a versão assíncrona loadCurriculumDataAsync
-    // Aqui retornamos do localStorage como fallback
-    if (typeof window === 'undefined') return defaultCurriculumData;
-    
-    const savedData = localStorage.getItem(STORAGE_KEY);
-    return savedData ? JSON.parse(savedData) : defaultCurriculumData;
+    // Format courses for Supabase insert
+    const courses = defaultCurriculumData.courses.map(course => ({
+      id: course.id,
+      name: course.name,
+      period: course.period,
+      row: course.row,
+      hours: course.hours,
+      type: course.type,
+      credits: course.credits,
+      professor: course.professor || null,
+    }));
+
+    // Insert courses
+    const { error: coursesError } = await supabase
+      .from('disciplinas')
+      .upsert(courses);
+
+    if (coursesError) throw coursesError;
+
+    // Format prerequisites for Supabase insert
+    const prerequisites = defaultCurriculumData.prerequisites.map(prereq => ({
+      from_disciplina: prereq.from,
+      to_disciplina: prereq.to,
+    }));
+
+    // Insert prerequisites
+    const { error: prerequisitesError } = await supabase
+      .from('prerequisitos')
+      .upsert(prerequisites);
+
+    if (prerequisitesError) throw prerequisitesError;
+
+    // Insert course schedules if available
+    const schedules = [];
+    for (const course of defaultCurriculumData.courses) {
+      if (course.schedules && course.schedules.length > 0) {
+        for (const schedule of course.schedules) {
+          schedules.push({
+            disciplina_id: course.id,
+            day: schedule.day,
+            time: schedule.time,
+          });
+        }
+      }
+    }
+
+    if (schedules.length > 0) {
+      const { error: schedulesError } = await supabase
+        .from('horarios')
+        .upsert(schedules);
+
+      if (schedulesError) throw schedulesError;
+    }
+
+    console.log('Default data imported to Supabase successfully');
   } catch (error) {
-    console.error('Erro ao carregar dados do currículo:', error);
-    return defaultCurriculumData;
+    console.error('Error importing default data to Supabase:', error);
   }
 };
 
-// Versão assíncrona para carregar do Supabase
+// Load curriculum data from Supabase
 export const loadCurriculumDataAsync = async (): Promise<CurriculumData> => {
   try {
-    const data = await loadCurriculumDataFromSupabase();
+    // Fetch courses
+    const { data: courses, error: coursesError } = await supabase
+      .from('disciplinas')
+      .select('*');
+
+    if (coursesError) throw coursesError;
+
+    // Fetch prerequisites
+    const { data: prerequisites, error: prerequisitesError } = await supabase
+      .from('prerequisitos')
+      .select('*');
+
+    if (prerequisitesError) throw prerequisitesError;
+
+    // Fetch schedules
+    const { data: schedules, error: schedulesError } = await supabase
+      .from('horarios')
+      .select('*');
+
+    if (schedulesError) throw schedulesError;
+
+    // Fetch completed courses
+    const { data: completedCourses, error: completedCoursesError } = await supabase
+      .from('disciplinas_concluidas')
+      .select('disciplina_id');
+
+    if (completedCoursesError) throw completedCoursesError;
+
+    // Map the data to match our application's structure
+    const mappedCourses = courses.map(course => {
+      const courseSchedules = schedules
+        .filter(s => s.disciplina_id === course.id)
+        .map(s => ({ day: s.day, time: s.time }));
+
+      return {
+        id: course.id,
+        name: course.name,
+        period: course.period,
+        row: course.row,
+        hours: course.hours,
+        type: course.type,
+        credits: course.credits,
+        professor: course.professor,
+        schedules: courseSchedules.length > 0 ? courseSchedules : undefined
+      };
+    });
+
+    const mappedPrerequisites = prerequisites.map(prereq => ({
+      from: prereq.from_disciplina,
+      to: prereq.to_disciplina
+    }));
+
+    const mappedCompletedCourses = completedCourses.map(c => c.disciplina_id);
+
+    // Store the data in localStorage for offline access
+    const data = {
+      courses: mappedCourses,
+      prerequisites: mappedPrerequisites,
+      completedCourses: mappedCompletedCourses
+    };
     
-    // Atualizar o localStorage com os dados do Supabase
     if (typeof window !== 'undefined') {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     }
     
     return data;
   } catch (error) {
-    console.error('Erro ao carregar dados do Supabase:', error);
-    return loadCurriculumData(); // Fallback para o localStorage
+    console.error('Error loading data from Supabase:', error);
+    return loadCurriculumData(); // Fallback to localStorage
   }
 };
 
-// Save curriculum data to localStorage and Supabase
+// Load curriculum data from localStorage (fallback)
+export const loadCurriculumData = (): CurriculumData => {
+  try {
+    if (typeof window === 'undefined') return defaultCurriculumData;
+    
+    const savedData = localStorage.getItem(STORAGE_KEY);
+    return savedData ? JSON.parse(savedData) : defaultCurriculumData;
+  } catch (error) {
+    console.error('Error loading data from localStorage:', error);
+    return defaultCurriculumData;
+  }
+};
+
+// Save data to localStorage and optionally to Supabase
 export const saveCurriculumData = (data: CurriculumData): void => {
   if (typeof window === 'undefined') return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  
-  // Não precisamos salvar tudo no Supabase aqui,
-  // pois as operações individuais já fazem isso
 };
 
-// Add a new course to localStorage and Supabase
-export const addCourse = (course: Course): CurriculumData => {
+// Add a course to Supabase and localStorage
+export const addCourse = async (course: Course): Promise<CurriculumData> => {
   const data = loadCurriculumData();
   data.courses.push(course);
   saveCurriculumData(data);
   
-  // Salvar no Supabase (assíncrono)
-  saveCourseToSupabase(course).catch(error => {
-    console.error('Erro ao salvar curso no Supabase:', error);
-  });
+  try {
+    const { user } = await supabase.auth.getUser();
+    
+    // Save to Supabase if user is authenticated
+    if (user) {
+      const { error } = await supabase
+        .from('disciplinas')
+        .insert({
+          id: course.id,
+          name: course.name,
+          period: course.period,
+          row: course.row,
+          hours: course.hours,
+          type: course.type,
+          credits: course.credits,
+          professor: course.professor || null,
+          user_id: user.id
+        });
+      
+      if (error) throw error;
+      
+      // Add course schedules if available
+      if (course.schedules && course.schedules.length > 0) {
+        const schedules = course.schedules.map(schedule => ({
+          disciplina_id: course.id,
+          day: schedule.day,
+          time: schedule.time
+        }));
+        
+        const { error: schedulesError } = await supabase
+          .from('horarios')
+          .insert(schedules);
+        
+        if (schedulesError) throw schedulesError;
+      }
+    }
+  } catch (error) {
+    console.error('Error saving course to Supabase:', error);
+  }
   
   return data;
 };
 
-// Update an existing course in localStorage and Supabase
-export const updateCourse = (courseId: string, updatedCourse: Course): CurriculumData => {
+// Update an existing course
+export const updateCourse = async (courseId: string, updatedCourse: Course): Promise<CurriculumData> => {
   const data = loadCurriculumData();
   const index = data.courses.findIndex(c => c.id === courseId);
   
@@ -86,42 +239,92 @@ export const updateCourse = (courseId: string, updatedCourse: Course): Curriculu
     data.courses[index] = updatedCourse;
     saveCurriculumData(data);
     
-    // Salvar no Supabase (assíncrono)
-    saveCourseToSupabase(updatedCourse).catch(error => {
-      console.error('Erro ao atualizar curso no Supabase:', error);
-    });
+    try {
+      const { user } = await supabase.auth.getUser();
+      
+      // Update in Supabase if user is authenticated
+      if (user) {
+        const { error } = await supabase
+          .from('disciplinas')
+          .update({
+            name: updatedCourse.name,
+            period: updatedCourse.period,
+            row: updatedCourse.row,
+            hours: updatedCourse.hours,
+            type: updatedCourse.type,
+            credits: updatedCourse.credits,
+            professor: updatedCourse.professor || null
+          })
+          .eq('id', courseId);
+        
+        if (error) throw error;
+        
+        // Update schedules: first delete, then insert
+        const { error: deleteError } = await supabase
+          .from('horarios')
+          .delete()
+          .eq('disciplina_id', courseId);
+        
+        if (deleteError) throw deleteError;
+        
+        if (updatedCourse.schedules && updatedCourse.schedules.length > 0) {
+          const schedules = updatedCourse.schedules.map(schedule => ({
+            disciplina_id: courseId,
+            day: schedule.day,
+            time: schedule.time
+          }));
+          
+          const { error: insertError } = await supabase
+            .from('horarios')
+            .insert(schedules);
+          
+          if (insertError) throw insertError;
+        }
+      }
+    } catch (error) {
+      console.error('Error updating course in Supabase:', error);
+    }
   }
   
   return data;
 };
 
-// Delete a course and its prerequisites from localStorage and Supabase
-export const deleteCourse = (courseId: string): CurriculumData => {
+// Delete a course
+export const deleteCourse = async (courseId: string): Promise<CurriculumData> => {
   const data = loadCurriculumData();
   
-  // Remove the course
   data.courses = data.courses.filter(c => c.id !== courseId);
-  
-  // Remove any prerequisites that involve this course
   data.prerequisites = data.prerequisites.filter(
     p => p.from !== courseId && p.to !== courseId
   );
   
   saveCurriculumData(data);
   
-  // Deletar do Supabase (assíncrono)
-  deleteCourseFromSupabase(courseId).catch(error => {
-    console.error('Erro ao deletar curso do Supabase:', error);
-  });
+  try {
+    const { user } = await supabase.auth.getUser();
+    
+    // Delete from Supabase if user is authenticated
+    if (user) {
+      // Supabase will handle cascade deleting related records due to ON DELETE CASCADE
+      const { error } = await supabase
+        .from('disciplinas')
+        .delete()
+        .eq('id', courseId);
+      
+      if (error) throw error;
+    }
+  } catch (error) {
+    console.error('Error deleting course from Supabase:', error);
+  }
   
   return data;
 };
 
-// Add a prerequisite relationship to localStorage and Supabase
-export const addPrerequisite = (from: string, to: string): CurriculumData => {
+// Add a prerequisite
+export const addPrerequisite = async (from: string, to: string): Promise<CurriculumData> => {
   const data = loadCurriculumData();
   
-  // Check if this prerequisite already exists
+  // Check if already exists
   const exists = data.prerequisites.some(
     p => p.from === from && p.to === to
   );
@@ -130,17 +333,30 @@ export const addPrerequisite = (from: string, to: string): CurriculumData => {
     data.prerequisites.push({ from, to });
     saveCurriculumData(data);
     
-    // Adicionar no Supabase (assíncrono)
-    addPrerequisiteToSupabase(from, to).catch(error => {
-      console.error('Erro ao adicionar pré-requisito no Supabase:', error);
-    });
+    try {
+      const { user } = await supabase.auth.getUser();
+      
+      // Add to Supabase if user is authenticated
+      if (user) {
+        const { error } = await supabase
+          .from('prerequisitos')
+          .insert({
+            from_disciplina: from,
+            to_disciplina: to
+          });
+        
+        if (error) throw error;
+      }
+    } catch (error) {
+      console.error('Error adding prerequisite to Supabase:', error);
+    }
   }
 
   return data;
 };
 
-// Remove a prerequisite relationship from localStorage and Supabase
-export const removePrerequisite = (from: string, to: string): CurriculumData => {
+// Remove a prerequisite
+export const removePrerequisite = async (from: string, to: string): Promise<CurriculumData> => {
   const data = loadCurriculumData();
   
   data.prerequisites = data.prerequisites.filter(
@@ -149,20 +365,165 @@ export const removePrerequisite = (from: string, to: string): CurriculumData => 
   
   saveCurriculumData(data);
   
-  // Remover do Supabase (assíncrono)
-  removePrerequisiteFromSupabase(from, to).catch(error => {
-    console.error('Erro ao remover pré-requisito do Supabase:', error);
-  });
+  try {
+    const { user } = await supabase.auth.getUser();
+    
+    // Remove from Supabase if user is authenticated
+    if (user) {
+      const { error } = await supabase
+        .from('prerequisitos')
+        .delete()
+        .eq('from_disciplina', from)
+        .eq('to_disciplina', to);
+      
+      if (error) throw error;
+    }
+  } catch (error) {
+    console.error('Error removing prerequisite from Supabase:', error);
+  }
   
   return data;
 };
 
-// Import full curriculum data to localStorage and Supabase
-export const importCurriculumData = (data: CurriculumData): CurriculumData => {
+// Mark a course as completed
+export const markCourseCompleted = async (courseId: string): Promise<void> => {
+  const data = loadCurriculumData();
+  if (!data.completedCourses.includes(courseId)) {
+    data.completedCourses.push(courseId);
+    saveCurriculumData(data);
+    
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      
+      // Mark as completed in Supabase if user is authenticated
+      if (userData?.user) {
+        const { error } = await supabase
+          .from('disciplinas_concluidas')
+          .insert({
+            disciplina_id: courseId,
+            user_id: userData.user.id
+          });
+        
+        if (error) throw error;
+      }
+    } catch (error) {
+      console.error('Error marking course as completed in Supabase:', error);
+    }
+  }
+};
+
+// Unmark a course as completed
+export const unmarkCourseCompleted = async (courseId: string): Promise<void> => {
+  const data = loadCurriculumData();
+  data.completedCourses = data.completedCourses.filter(id => id !== courseId);
   saveCurriculumData(data);
   
-  // Para o Supabase, seria necessário um processo mais complexo
-  // que sincronize todo o conjunto de dados
+  try {
+    const { data: userData } = await supabase.auth.getUser();
+    
+    // Unmark as completed in Supabase if user is authenticated
+    if (userData?.user) {
+      const { error } = await supabase
+        .from('disciplinas_concluidas')
+        .delete()
+        .eq('disciplina_id', courseId)
+        .eq('user_id', userData.user.id);
+      
+      if (error) throw error;
+    }
+  } catch (error) {
+    console.error('Error unmarking course as completed in Supabase:', error);
+  }
+};
+
+// Import full curriculum data 
+export const importCurriculumData = async (data: CurriculumData): Promise<CurriculumData> => {
+  saveCurriculumData(data);
+  
+  try {
+    const { data: userData } = await supabase.auth.getUser();
+    
+    // Import to Supabase if user is authenticated
+    if (userData?.user) {
+      // Format courses for Supabase
+      const courses = data.courses.map(course => ({
+        id: course.id,
+        name: course.name,
+        period: course.period,
+        row: course.row,
+        hours: course.hours,
+        type: course.type,
+        credits: course.credits,
+        professor: course.professor || null,
+        user_id: userData.user.id
+      }));
+      
+      // Clear existing data first (if user has permission)
+      await supabase
+        .from('disciplinas')
+        .delete()
+        .filter('user_id', 'eq', userData.user.id);
+      
+      // Insert new courses
+      const { error: coursesError } = await supabase
+        .from('disciplinas')
+        .insert(courses);
+      
+      if (coursesError) throw coursesError;
+      
+      // Format and insert prerequisites
+      const prerequisites = data.prerequisites.map(prereq => ({
+        from_disciplina: prereq.from,
+        to_disciplina: prereq.to
+      }));
+      
+      if (prerequisites.length > 0) {
+        const { error: prerequisitesError } = await supabase
+          .from('prerequisitos')
+          .insert(prerequisites);
+        
+        if (prerequisitesError) throw prerequisitesError;
+      }
+      
+      // Format and insert schedules
+      const schedules = [];
+      for (const course of data.courses) {
+        if (course.schedules && course.schedules.length > 0) {
+          for (const schedule of course.schedules) {
+            schedules.push({
+              disciplina_id: course.id,
+              day: schedule.day,
+              time: schedule.time
+            });
+          }
+        }
+      }
+      
+      if (schedules.length > 0) {
+        const { error: schedulesError } = await supabase
+          .from('horarios')
+          .insert(schedules);
+        
+        if (schedulesError) throw schedulesError;
+      }
+      
+      // Mark completed courses
+      const completedCourses = data.completedCourses.map(courseId => ({
+        disciplina_id: courseId,
+        user_id: userData.user.id
+      }));
+      
+      if (completedCourses.length > 0) {
+        const { error: completedCoursesError } = await supabase
+          .from('disciplinas_concluidas')
+          .insert(completedCourses);
+        
+        if (completedCoursesError) throw completedCoursesError;
+      }
+    }
+  } catch (error) {
+    console.error('Error importing data to Supabase:', error);
+  }
   
   return data;
 };
@@ -193,30 +554,4 @@ export const generateCourseId = (courseName: string): string => {
 export const isCourseCompleted = (courseId: string): boolean => {
   const data = loadCurriculumData();
   return data.completedCourses.includes(courseId);
-};
-
-// Mark a course as completed in localStorage and Supabase
-export const markCourseCompleted = (courseId: string) => {
-  const data = loadCurriculumData();
-  if (!data.completedCourses.includes(courseId)) {
-    data.completedCourses.push(courseId);
-    saveCurriculumData(data);
-    
-    // Marcar como concluído no Supabase (assíncrono)
-    markCourseCompletedInSupabase(courseId).catch(error => {
-      console.error('Erro ao marcar curso como concluído no Supabase:', error);
-    });
-  }
-};
-
-// Unmark a course as completed in localStorage and Supabase
-export const unmarkCourseCompleted = (courseId: string) => {
-  const data = loadCurriculumData();
-  data.completedCourses = data.completedCourses.filter(id => id !== courseId);
-  saveCurriculumData(data);
-  
-  // Desmarcar como concluído no Supabase (assíncrono)
-  unmarkCourseCompletedInSupabase(courseId).catch(error => {
-    console.error('Erro ao desmarcar curso como concluído no Supabase:', error);
-  });
 };

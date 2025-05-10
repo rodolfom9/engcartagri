@@ -5,7 +5,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Course, Prerequisite, CurriculumData } from '@/types/curriculum';
-import { loadCurriculumData, deleteCourse, removePrerequisite } from '@/lib/curriculumStorage';
+import { loadCurriculumData, loadCurriculumDataAsync, deleteCourse, removePrerequisite } from '@/lib/curriculumStorage';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import CourseForm from './CourseForm';
 import PrerequisiteForm from './PrerequisiteForm';
 
@@ -14,51 +17,162 @@ interface ManageCurriculumProps {
 }
 
 const ManageCurriculum: React.FC<ManageCurriculumProps> = ({ onDataChange }) => {
-  const [curriculumData, setCurriculumData] = useState<CurriculumData>({ courses: [], prerequisites: [] });
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [curriculumData, setCurriculumData] = useState<CurriculumData>({ 
+    courses: [], 
+    prerequisites: [],
+    completedCourses: []
+  });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState<'course' | 'prerequisite'>('course');
   const [editingCourse, setEditingCourse] = useState<Course | undefined>(undefined);
 
-  // Load data on mount
+  // Load data on mount and setup realtime subscription
   useEffect(() => {
     loadAndSetData();
+    
+    // Set up realtime subscriptions for Supabase
+    const coursesSubscription = supabase
+      .channel('manage-changes-courses')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'disciplinas' },
+        (payload) => {
+          console.log('Courses change detected:', payload);
+          loadAndSetData();
+        }
+      )
+      .subscribe();
+    
+    const prerequisitesSubscription = supabase
+      .channel('manage-changes-prerequisites')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'prerequisitos' },
+        (payload) => {
+          console.log('Prerequisites change detected:', payload);
+          loadAndSetData();
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(coursesSubscription);
+      supabase.removeChannel(prerequisitesSubscription);
+    };
   }, []);
 
-  const loadAndSetData = () => {
-    const data = loadCurriculumData();
-    setCurriculumData(data);
+  const loadAndSetData = async () => {
+    try {
+      const data = await loadCurriculumDataAsync();
+      setCurriculumData(data);
+    } catch (error) {
+      console.error('Error loading data:', error);
+      const localData = loadCurriculumData();
+      setCurriculumData(localData);
+    }
   };
 
   const handleOpenAddCourse = () => {
+    if (!user) {
+      toast({
+        title: "Login necessário",
+        description: "Você precisa estar autenticado para adicionar disciplinas",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setDialogType('course');
     setEditingCourse(undefined);
     setDialogOpen(true);
   };
 
   const handleOpenEditCourse = (course: Course) => {
+    if (!user) {
+      toast({
+        title: "Login necessário",
+        description: "Você precisa estar autenticado para editar disciplinas",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setDialogType('course');
     setEditingCourse(course);
     setDialogOpen(true);
   };
 
   const handleOpenAddPrerequisite = () => {
+    if (!user) {
+      toast({
+        title: "Login necessário",
+        description: "Você precisa estar autenticado para adicionar pré-requisitos",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setDialogType('prerequisite');
     setDialogOpen(true);
   };
 
-  const handleDeleteCourse = (courseId: string) => {
-    if (window.confirm('Are you sure you want to delete this course?')) {
-      deleteCourse(courseId);
-      loadAndSetData();
-      onDataChange();
+  const handleDeleteCourse = async (courseId: string) => {
+    if (!user) {
+      toast({
+        title: "Login necessário",
+        description: "Você precisa estar autenticado para excluir disciplinas",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (window.confirm('Tem certeza que deseja excluir esta disciplina?')) {
+      try {
+        await deleteCourse(courseId);
+        loadAndSetData();
+        onDataChange();
+        toast({
+          title: "Sucesso",
+          description: "Disciplina excluída com sucesso"
+        });
+      } catch (error: any) {
+        toast({
+          title: "Erro ao excluir disciplina",
+          description: error.message || "Ocorreu um erro ao excluir a disciplina",
+          variant: "destructive"
+        });
+      }
     }
   };
 
-  const handleDeletePrerequisite = (from: string, to: string) => {
-    if (window.confirm('Are you sure you want to delete this prerequisite?')) {
-      removePrerequisite(from, to);
-      loadAndSetData();
-      onDataChange();
+  const handleDeletePrerequisite = async (from: string, to: string) => {
+    if (!user) {
+      toast({
+        title: "Login necessário",
+        description: "Você precisa estar autenticado para excluir pré-requisitos",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (window.confirm('Tem certeza que deseja excluir este pré-requisito?')) {
+      try {
+        await removePrerequisite(from, to);
+        loadAndSetData();
+        onDataChange();
+        toast({
+          title: "Sucesso",
+          description: "Pré-requisito excluído com sucesso"
+        });
+      } catch (error: any) {
+        toast({
+          title: "Erro ao excluir pré-requisito",
+          description: error.message || "Ocorreu um erro ao excluir o pré-requisito",
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -83,15 +197,15 @@ const ManageCurriculum: React.FC<ManageCurriculumProps> = ({ onDataChange }) => 
     <div className="space-y-6">
       <Tabs defaultValue="courses">
         <TabsList className="grid grid-cols-2">
-          <TabsTrigger value="courses">Courses</TabsTrigger>
-          <TabsTrigger value="prerequisites">Prerequisites</TabsTrigger>
+          <TabsTrigger value="courses">Disciplinas</TabsTrigger>
+          <TabsTrigger value="prerequisites">Pré-requisitos</TabsTrigger>
         </TabsList>
         
         {/* Courses Tab */}
         <TabsContent value="courses" className="space-y-4">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-medium">Manage Courses</h3>
-            <Button onClick={handleOpenAddCourse}>Add Course</Button>
+            <h3 className="text-lg font-medium">Gerenciar Disciplinas</h3>
+            <Button onClick={handleOpenAddCourse}>Adicionar Disciplina</Button>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -106,21 +220,26 @@ const ManageCurriculum: React.FC<ManageCurriculumProps> = ({ onDataChange }) => 
                     'bg-course-optional/50'
                   }`}>
                     <CardTitle className="text-base">{course.name}</CardTitle>
-                    <CardDescription>Period {course.period}, Row {course.row}</CardDescription>
+                    <CardDescription>Período {course.period}, Linha {course.row}</CardDescription>
                   </CardHeader>
                   <CardContent className="pt-4 pb-2 text-sm">
                     <div className="flex justify-between">
-                      <span>Hours: {course.hours}</span>
-                      <span>Type: {course.type}</span>
-                      <span>Credits: {course.credits}</span>
+                      <span>Horas: {course.hours}</span>
+                      <span>Tipo: {course.type}</span>
+                      <span>Créditos: {course.credits}</span>
                     </div>
+                    {course.professor && (
+                      <div className="mt-2">
+                        <span>Professor: {course.professor}</span>
+                      </div>
+                    )}
                   </CardContent>
                   <CardFooter className="flex justify-end space-x-2 pt-0">
                     <Button variant="outline" size="sm" onClick={() => handleOpenEditCourse(course)}>
-                      Edit
+                      Editar
                     </Button>
                     <Button variant="destructive" size="sm" onClick={() => handleDeleteCourse(course.id)}>
-                      Delete
+                      Excluir
                     </Button>
                   </CardFooter>
                 </Card>
@@ -131,8 +250,8 @@ const ManageCurriculum: React.FC<ManageCurriculumProps> = ({ onDataChange }) => 
         {/* Prerequisites Tab */}
         <TabsContent value="prerequisites" className="space-y-4">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-medium">Manage Prerequisites</h3>
-            <Button onClick={handleOpenAddPrerequisite}>Add Prerequisite</Button>
+            <h3 className="text-lg font-medium">Gerenciar Pré-requisitos</h3>
+            <Button onClick={handleOpenAddPrerequisite}>Adicionar Pré-requisito</Button>
           </div>
           
           {curriculumData.prerequisites.length > 0 ? (
@@ -150,7 +269,7 @@ const ManageCurriculum: React.FC<ManageCurriculumProps> = ({ onDataChange }) => 
                       size="sm" 
                       onClick={() => handleDeletePrerequisite(prereq.from, prereq.to)}
                     >
-                      Delete
+                      Excluir
                     </Button>
                   </CardContent>
                 </Card>
@@ -159,7 +278,7 @@ const ManageCurriculum: React.FC<ManageCurriculumProps> = ({ onDataChange }) => 
           ) : (
             <Card>
               <CardContent className="p-6 text-center text-gray-500">
-                No prerequisites defined yet. Click "Add Prerequisite" to create one.
+                Nenhum pré-requisito definido ainda. Clique em "Adicionar Pré-requisito" para criar um.
               </CardContent>
             </Card>
           )}
@@ -172,8 +291,8 @@ const ManageCurriculum: React.FC<ManageCurriculumProps> = ({ onDataChange }) => 
           <DialogHeader>
             <DialogTitle>
               {dialogType === 'course' ? 
-                (editingCourse ? 'Edit Course' : 'Add Course') : 
-                'Add Prerequisite'}
+                (editingCourse ? 'Editar Disciplina' : 'Adicionar Disciplina') : 
+                'Adicionar Pré-requisito'}
             </DialogTitle>
           </DialogHeader>
           
