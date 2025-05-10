@@ -35,14 +35,34 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    // Determinar número de aulas baseado na carga horária
+    // Determine number of classes based on course hours
     if (course.hours) {
       const hours = parseInt(course.hours);
       if (hours === 27) setScheduleCount(1);
       else if (hours === 54) setScheduleCount(2);
       else if (hours === 81) setScheduleCount(3);
+      else setScheduleCount(0);
+    }
+    
+    // Initialize schedules array if it doesn't exist
+    if (!course.schedules) {
+      setCourse(prev => ({ ...prev, schedules: [] }));
     }
   }, [course.hours]);
+
+  // Initialize scheduleCount based on initialCourse hours or schedules
+  useEffect(() => {
+    if (initialCourse) {
+      if (initialCourse.hours) {
+        const hours = parseInt(initialCourse.hours);
+        if (hours === 27) setScheduleCount(1);
+        else if (hours === 54) setScheduleCount(2);
+        else if (hours === 81) setScheduleCount(3);
+      } else if (initialCourse.schedules) {
+        setScheduleCount(initialCourse.schedules.length);
+      }
+    }
+  }, [initialCourse]);
 
   const isEditing = !!initialCourse;
 
@@ -80,7 +100,7 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
 
   const handleHoursChange = (value: string) => {
     setCourse(prev => ({ ...prev, hours: value }));
-    // Atualizar número de aulas baseado na carga horária
+    // Update number of classes based on hours
     const hours = parseInt(value);
     if (hours === 27) setScheduleCount(1);
     else if (hours === 54) setScheduleCount(2);
@@ -161,23 +181,33 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
         return;
       }
       
+      // Ensure the schedules array is properly set up based on scheduleCount
+      const updatedCourse = { ...course };
+      
+      // Trim schedules array to match the scheduleCount
+      if (updatedCourse.schedules && scheduleCount > 0) {
+        updatedCourse.schedules = updatedCourse.schedules.slice(0, scheduleCount);
+      }
+      
+      console.log('Submitting course with schedules:', updatedCourse);
+      
       // Generate ID for new courses
       if (!isEditing) {
-        course.id = generateCourseId(course.name);
-        await addCourse(course);
+        updatedCourse.id = generateCourseId(updatedCourse.name);
+        await addCourse(updatedCourse);
         toast({
           title: "Sucesso",
           description: "Disciplina adicionada com sucesso",
         });
       } else {
-        await updateCourse(course.id, course);
+        await updateCourse(updatedCourse.id, updatedCourse);
         toast({
           title: "Sucesso",
           description: "Disciplina atualizada com sucesso",
         });
       }
 
-      onSave(course);
+      onSave(updatedCourse);
     } catch (error: any) {
       toast({
         title: "Erro",

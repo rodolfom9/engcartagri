@@ -33,6 +33,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
           .select('*');
           
         if (error) throw error;
+        console.log('Fetched horarios from Supabase:', data);
         setHorarios(data || []);
       } catch (error) {
         console.error('Error fetching horarios:', error);
@@ -52,6 +53,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
           table: 'horarios'
         },
         (payload) => {
+          console.log('Real-time horarios update:', payload);
           if (payload.eventType === 'INSERT') {
             setHorarios((current) => [...current, payload.new]);
           } else if (payload.eventType === 'DELETE') {
@@ -62,6 +64,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
       .subscribe();
       
     return () => {
+      console.log('Cleaning up subscription');
       supabase.removeChannel(horarioSubscription);
     };
   }, []);

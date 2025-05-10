@@ -82,68 +82,87 @@ export const loadCurriculumDataFromSupabase = async (): Promise<CurriculumData> 
 
 // Salvar disciplina no Supabase
 export const saveCourseToSupabase = async (course: Course): Promise<boolean> => {
-  // Verificar se a disciplina já existe
-  const { data: existingCourse, error: checkError } = await supabase
-    .from('disciplinas')
-    .select('id')
-    .eq('id', course.id)
-    .single();
+  try {
+    // Verificar se a disciplina já existe
+    const { data: existingCourse, error: checkError } = await supabase
+      .from('disciplinas')
+      .select('id')
+      .eq('id', course.id)
+      .single();
 
-  if (checkError && checkError.code !== 'PGRST116') {
-    console.error('Erro ao verificar disciplina:', checkError);
-    return false;
-  }
-
-  const now = new Date().toISOString();
-
-  // Upsert da disciplina (insert ou update)
-  const { error } = await supabase
-    .from('disciplinas')
-    .upsert({
-      id: course.id,
-      name: course.name,
-      period: course.period,
-      row: course.row,
-      hours: course.hours,
-      type: course.type,
-      credits: course.credits,
-      professor: course.professor || null,
-      updated_at: now,
-      created_at: existingCourse ? undefined : now
-    });
-
-  if (error) {
-    console.error('Erro ao salvar disciplina:', error);
-    return false;
-  }
-
-  // Se houver horários, salvar ou atualizar
-  if (course.schedules && course.schedules.length > 0) {
-    // Primeiro remover horários existentes
-    await supabase
-      .from('horarios')
-      .delete()
-      .eq('disciplina_id', course.id);
-
-    // Inserir novos horários
-    const schedulesData = course.schedules.map(schedule => ({
-      disciplina_id: course.id,
-      day: schedule.day,
-      time: schedule.time,
-      created_at: now
-    }));
-
-    const { error: scheduleError } = await supabase
-      .from('horarios')
-      .insert(schedulesData);
-
-    if (scheduleError) {
-      console.error('Erro ao salvar horários:', scheduleError);
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('Erro ao verificar disciplina:', checkError);
       return false;
     }
-  }
 
-  return true;
+    const now = new Date().toISOString();
+
+    // Get the current authenticated user
+    const { data: userData } = await supabase.auth.getSession();
+    
+    if (!userData?.session?.user) {
+      console.error('Usuário não autenticado ao salvar disciplina');
+      return false;
+    }
+
+    // Upsert da disciplina (insert ou update)
+    const { error } = await supabase
+      .from('disciplinas')
+      .upsert({
+        id: course.id,
+        name: course.name,
+        period: course.period,
+        row: course.row,
+        hours: course.hours,
+        type: course.type,
+        credits: course.credits,
+        professor: course.professor || null,
+        user_id: userData.session.user.id,
+        updated_at: now,
+        created_at: existingCourse ? undefined : now
+      });
+
+    if (error) {
+      console.error('Erro ao salvar disciplina:', error);
+      return false;
+    }
+
+    // Se houver horários, salvar ou atualizar
+    if (course.schedules && course.schedules.length > 0) {
+      // Primeiro remover horários existentes
+      const { error: deleteError } = await supabase
+        .from('horarios')
+        .delete()
+        .eq('disciplina_id', course.id);
+
+      if (deleteError) {
+        console.error('Erro ao remover horários antigos:', deleteError);
+        return false;
+      }
+
+      // Inserir novos horários
+      const schedulesData = course.schedules.map(schedule => ({
+        disciplina_id: course.id,
+        day: schedule.day,
+        time: schedule.time,
+        created_at: now
+      }));
+
+      const { error: scheduleError } = await supabase
+        .from('horarios')
+        .insert(schedulesData);
+
+      if (scheduleError) {
+        console.error('Erro ao salvar horários:', scheduleError);
+        return false;
+      }
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Erro geral ao salvar disciplina:', error);
+    return false;
+  }
 };
 
 // Excluir disciplina do Supabase

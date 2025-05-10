@@ -1,7 +1,7 @@
-
 import { CurriculumData, Course, Prerequisite } from '../types/curriculum';
 import { defaultCurriculumData } from '../data/courses';
 import { supabase } from '../integrations/supabase/client';
+import { saveCourseToSupabase } from './supabaseService';
 
 const STORAGE_KEY = 'curriculum_data';
 
@@ -183,46 +183,15 @@ export const saveCurriculumData = (data: CurriculumData): void => {
 
 // Add a course to Supabase and localStorage
 export const addCourse = async (course: Course): Promise<CurriculumData> => {
+  // Save to localStorage
   const data = loadCurriculumData();
   data.courses.push(course);
   saveCurriculumData(data);
   
   try {
-    const { data: userData } = await supabase.auth.getSession();
-    
-    // Save to Supabase if user is authenticated
-    if (userData?.session?.user) {
-      const { error } = await supabase
-        .from('disciplinas')
-        .insert({
-          id: course.id,
-          name: course.name,
-          period: course.period,
-          row: course.row,
-          hours: course.hours,
-          type: course.type,
-          credits: course.credits,
-          professor: course.professor || null,
-          user_id: userData.session.user.id
-        });
-      
-      if (error) throw error;
-      
-      // Add course schedules if available
-      if (course.schedules && course.schedules.length > 0) {
-        const schedules = course.schedules.map(schedule => ({
-          disciplina_id: course.id,
-          day: schedule.day,
-          time: schedule.time
-        }));
-        
-        const { error: schedulesError } = await supabase
-          .from('horarios')
-          .insert(schedules);
-        
-        if (schedulesError) throw schedulesError;
-      }
-    }
+    console.log('Adding course with schedules:', course);
+    // Use the saveCourseToSupabase function which handles schedules properly
+    await saveCourseToSupabase(course);
   } catch (error) {
     console.error('Error saving course to Supabase:', error);
   }
@@ -232,6 +201,7 @@ export const addCourse = async (course: Course): Promise<CurriculumData> => {
 
 // Update an existing course
 export const updateCourse = async (courseId: string, updatedCourse: Course): Promise<CurriculumData> => {
+  // Update in localStorage
   const data = loadCurriculumData();
   const index = data.courses.findIndex(c => c.id === courseId);
   
@@ -240,47 +210,9 @@ export const updateCourse = async (courseId: string, updatedCourse: Course): Pro
     saveCurriculumData(data);
     
     try {
-      const { data: userData } = await supabase.auth.getSession();
-      
-      // Update in Supabase if user is authenticated
-      if (userData?.session?.user) {
-        const { error } = await supabase
-          .from('disciplinas')
-          .update({
-            name: updatedCourse.name,
-            period: updatedCourse.period,
-            row: updatedCourse.row,
-            hours: updatedCourse.hours,
-            type: updatedCourse.type,
-            credits: updatedCourse.credits,
-            professor: updatedCourse.professor || null
-          })
-          .eq('id', courseId);
-        
-        if (error) throw error;
-        
-        // Update schedules: first delete, then insert
-        const { error: deleteError } = await supabase
-          .from('horarios')
-          .delete()
-          .eq('disciplina_id', courseId);
-        
-        if (deleteError) throw deleteError;
-        
-        if (updatedCourse.schedules && updatedCourse.schedules.length > 0) {
-          const schedules = updatedCourse.schedules.map(schedule => ({
-            disciplina_id: courseId,
-            day: schedule.day,
-            time: schedule.time
-          }));
-          
-          const { error: insertError } = await supabase
-            .from('horarios')
-            .insert(schedules);
-          
-          if (insertError) throw insertError;
-        }
-      }
+      console.log('Updating course with schedules:', updatedCourse);
+      // Use the saveCourseToSupabase function which handles schedules properly
+      await saveCourseToSupabase(updatedCourse);
     } catch (error) {
       console.error('Error updating course in Supabase:', error);
     }
