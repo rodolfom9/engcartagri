@@ -130,6 +130,7 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
     const newErrors: Record<string, string> = {};
     
     // Required fields validation
+    if (!course.id) newErrors.id = "O código da disciplina é obrigatório";
     if (!course.name) newErrors.name = "O nome da disciplina é obrigatório";
     if (!course.hours) newErrors.hours = "A carga horária é obrigatória";
     
@@ -145,6 +146,7 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
         const schedule = schedules[i];
         if (!schedule || !schedule.day || !schedule.time) {
           newErrors[`schedule-${i}`] = "Horário incompleto";
+          console.error(`Horário ${i+1} incompleto:`, schedule);
         }
       }
     }
@@ -181,6 +183,9 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
       // Ensure the schedules array is properly set up based on scheduleCount
       const updatedCourse = { ...course };
       
+      console.log('Horários antes da validação:', updatedCourse.schedules);
+      console.log('Número de horários esperado:', scheduleCount);
+      
       // Trim schedules array to match the scheduleCount and ensure all schedules are valid
       if (updatedCourse.schedules && scheduleCount > 0) {
         updatedCourse.schedules = updatedCourse.schedules
@@ -192,12 +197,14 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
           .filter(schedule => schedule.day && schedule.time); // Remove invalid schedules
       }
       
-      console.log('Submitting course with schedules:', updatedCourse);
+      console.log('Horários após validação:', updatedCourse.schedules);
       
       // Generate ID for new courses only if not provided
       if (!isEditing && !updatedCourse.id) {
         updatedCourse.id = generateCourseId(updatedCourse.name);
       }
+      
+      console.log('Salvando disciplina:', updatedCourse);
       
       if (!isEditing) {
         await addCourse(updatedCourse);

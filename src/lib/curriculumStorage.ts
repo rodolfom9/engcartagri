@@ -2,6 +2,7 @@ import { CurriculumData, Course, Prerequisite } from '../types/curriculum';
 import { defaultCurriculumData } from '../data/courses';
 import { supabase } from '../integrations/supabase/client';
 import { saveCourseToSupabase } from './supabaseService';
+import { deleteCourseFromSupabase } from './supabaseService';
 
 const STORAGE_KEY = 'curriculum_data';
 
@@ -264,18 +265,9 @@ export const deleteCourse = async (courseId: string): Promise<CurriculumData> =>
   saveCurriculumData(data);
   
   try {
-    const { data: userData } = await supabase.auth.getSession();
-    
-    // Delete from Supabase if user is authenticated
-    if (userData?.session?.user) {
-      // Supabase will handle cascade deleting related records due to ON DELETE CASCADE
-      const { error } = await supabase
-        .from('disciplinas')
-        .delete()
-        .eq('id', courseId);
-      
-      if (error) throw error;
-    }
+    // Usar a função específica para deletar do Supabase
+    await deleteCourseFromSupabase(courseId);
+    console.log('Disciplina removida do Supabase com sucesso:', courseId);
   } catch (error) {
     console.error('Error deleting course from Supabase:', error);
   }
@@ -439,10 +431,14 @@ export const importCurriculumToSupabase = async (data: CurriculumData): Promise<
       created_at: new Date().toISOString()
     }));
     
-    await supabase
-      .from('prerequisitos')
-      .delete()
-      .eq('from_disciplina', coursesForInsert.map(c => c.id));
+    // Delete existing prerequisites
+    // Use each course ID individually instead of passing an array
+    for (const course of coursesForInsert) {
+      await supabase
+        .from('prerequisitos')
+        .delete()
+        .eq('from_disciplina', course.id);
+    }
       
     if (prerequisitesForInsert.length > 0) {
       const { error: prerequisitesError } = await supabase

@@ -122,6 +122,9 @@ export const saveCourseToSupabase = async (course: Course): Promise<void> => {
       throw new Error('Usuário não autenticado');
     }
 
+    console.log('Salvando disciplina com ID:', course.id);
+    console.log('Horários da disciplina:', course.schedules);
+
     // Preparar os dados do curso
     const courseData = {
       id: course.id,
@@ -147,9 +150,13 @@ export const saveCourseToSupabase = async (course: Course): Promise<void> => {
       throw upsertError;
     }
 
+    console.log('Disciplina salva com sucesso no Supabase');
+
     // Se houver horários para salvar
     if (course.schedules && course.schedules.length > 0) {
       try {
+        console.log(`Salvando ${course.schedules.length} horários para disciplina ${course.id}`);
+        
         // Primeiro, remover horário existente
         const { error: deleteError } = await supabase
           .from('horarios')
@@ -172,21 +179,26 @@ export const saveCourseToSupabase = async (course: Course): Promise<void> => {
           time3: course.schedules[2]?.time || null
         };
 
-        console.log('Tentando salvar horários:', scheduleData);
+        console.log('Dados do horário a serem salvos:', scheduleData);
 
         // Inserir novo horário
-        const { error: scheduleError } = await supabase
+        const { data: insertResult, error: scheduleError } = await supabase
           .from('horarios')
-          .insert(scheduleData);
+          .insert(scheduleData)
+          .select();
 
         if (scheduleError) {
           console.error('Erro ao inserir horário:', scheduleError);
           throw scheduleError;
         }
+
+        console.log('Horário inserido com sucesso:', insertResult);
       } catch (error) {
         console.error('Erro ao manipular horários:', error);
         throw error;
       }
+    } else {
+      console.log('Sem horários para salvar');
     }
   } catch (error) {
     console.error('Error saving course to Supabase:', error);
