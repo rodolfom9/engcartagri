@@ -411,6 +411,91 @@ const CurriculumFlow: React.FC = () => {
                   handleRemoveCourse(course);
                 }
               }}
+              onUpdateCourseId={async (oldId: string, newId: string) => {
+                try {
+                  // Atualizar no Supabase
+                  const { error } = await supabase
+                    .from('disciplinas')
+                    .update({ id: newId })
+                    .eq('id', oldId);
+
+                  if (error) throw error;
+
+                  // Atualizar horários
+                  const { error: horariosError } = await supabase
+                    .from('horarios')
+                    .update({ disciplina_id: newId })
+                    .eq('disciplina_id', oldId);
+
+                  if (horariosError) throw horariosError;
+
+                  // Atualizar pré-requisitos (from)
+                  const { error: prereqFromError } = await supabase
+                    .from('prerequisitos')
+                    .update({ from_disciplina: newId })
+                    .eq('from_disciplina', oldId);
+
+                  if (prereqFromError) throw prereqFromError;
+
+                  // Atualizar pré-requisitos (to)
+                  const { error: prereqToError } = await supabase
+                    .from('prerequisitos')
+                    .update({ to_disciplina: newId })
+                    .eq('to_disciplina', oldId);
+
+                  if (prereqToError) throw prereqToError;
+
+                  // Atualizar disciplinas concluídas
+                  const { error: completedError } = await supabase
+                    .from('disciplinas_concluidas')
+                    .update({ disciplina_id: newId })
+                    .eq('disciplina_id', oldId);
+
+                  if (completedError) throw completedError;
+
+                  // Atualizar estado local
+                  const newData = { ...curriculumData };
+                  
+                  // Atualizar courses
+                  const courseIndex = newData.courses.findIndex(c => c.id === oldId);
+                  if (courseIndex !== -1) {
+                    newData.courses[courseIndex] = {
+                      ...newData.courses[courseIndex],
+                      id: newId
+                    };
+                  }
+
+                  // Atualizar prerequisites
+                  newData.prerequisites = newData.prerequisites.map(prereq => ({
+                    from: prereq.from === oldId ? newId : prereq.from,
+                    to: prereq.to === oldId ? newId : prereq.to
+                  }));
+
+                  // Atualizar completedCourses
+                  newData.completedCourses = newData.completedCourses.map(id => 
+                    id === oldId ? newId : id
+                  );
+
+                  // Atualizar schedule
+                  const newSchedule = { ...schedule };
+                  Object.keys(newSchedule).forEach(day => {
+                    Object.keys(newSchedule[day] || {}).forEach(time => {
+                      if (newSchedule[day]?.[time]?.id === oldId) {
+                        newSchedule[day][time] = {
+                          ...newSchedule[day][time]!,
+                          id: newId
+                        };
+                      }
+                    });
+                  });
+
+                  setCurriculumData(newData);
+                  setSchedule(newSchedule);
+                } catch (error: any) {
+                  console.error('Erro ao atualizar ID:', error);
+                  throw new Error(error.message);
+                }
+              }}
             />
             <CourseList 
               courses={curriculumData.courses}
