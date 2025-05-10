@@ -121,6 +121,7 @@ export const saveCourseToSupabase = async (course: Course): Promise<boolean> => 
       return false;
     }
 
+    console.log('Tentando salvar disciplina com professor:', course.professor);
     const now = new Date().toISOString();
 
     // Preparar dados da disciplina
@@ -149,20 +150,28 @@ export const saveCourseToSupabase = async (course: Course): Promise<boolean> => 
       updated_at: now
     };
 
+    console.log('Dados preparados para salvar:', courseData);
+
     // Verificar se a disciplina já existe
     const { data: existingCourse, error: checkError } = await supabase
       .from('disciplinas')
-      .select('id, user_id')
+      .select('id, user_id, professor')
       .eq('id', course.id)
       .single();
 
+    console.log('Disciplina existente:', existingCourse);
+
     if (existingCourse) {
       // Se existir, atualizar
-      const { error: updateError } = await supabase
+      console.log('Atualizando disciplina existente...');
+      const { data: updateData, error: updateError } = await supabase
         .from('disciplinas')
         .update(courseData)
         .eq('id', course.id)
-        .eq('user_id', userData.session.user.id);
+        .eq('user_id', userData.session.user.id)
+        .select();
+
+      console.log('Resultado da atualização:', { data: updateData, error: updateError });
 
       if (updateError) {
         console.error('Erro ao atualizar disciplina:', updateError);
@@ -170,10 +179,14 @@ export const saveCourseToSupabase = async (course: Course): Promise<boolean> => 
       }
     } else {
       // Se não existir, inserir
+      console.log('Inserindo nova disciplina...');
       courseData.created_at = now;
-      const { error: insertError } = await supabase
+      const { data: insertData, error: insertError } = await supabase
         .from('disciplinas')
-        .insert([courseData]);
+        .insert([courseData])
+        .select();
+
+      console.log('Resultado da inserção:', { data: insertData, error: insertError });
 
       if (insertError) {
         console.error('Erro ao inserir disciplina:', insertError);
