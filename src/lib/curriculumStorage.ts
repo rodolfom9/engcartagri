@@ -136,9 +136,24 @@ export const loadCurriculumDataAsync = async (): Promise<CurriculumData> => {
 
     // Map the data to match our application's structure
     const mappedCourses = courses.map(course => {
-      const courseSchedules = schedules
-        .filter(s => s.disciplina_id === course.id)
-        .map(s => ({ day: s.day, time: s.time }));
+      // Encontrar horário correspondente na nova estrutura da tabela
+      const courseSchedule = schedules.find(s => s.disciplina_id === course.id);
+      let courseSchedules = [];
+      
+      if (courseSchedule) {
+        // Adicionar cada par de dia/horário se existir
+        if (courseSchedule.day1 && courseSchedule.time1) {
+          courseSchedules.push({ day: courseSchedule.day1, time: courseSchedule.time1 });
+        }
+        
+        if (courseSchedule.day2 && courseSchedule.time2) {
+          courseSchedules.push({ day: courseSchedule.day2, time: courseSchedule.time2 });
+        }
+        
+        if (courseSchedule.day3 && courseSchedule.time3) {
+          courseSchedules.push({ day: courseSchedule.day3, time: courseSchedule.time3 });
+        }
+      }
 
       return {
         id: course.id,
