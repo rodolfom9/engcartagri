@@ -203,7 +203,8 @@ export const saveCourseToSupabase = async (course: Course): Promise<boolean> => 
         day2: course.schedules[1]?.day || null,
         time2: course.schedules[1]?.time || null,
         day3: course.schedules[2]?.day || null,
-        time3: course.schedules[2]?.time || null
+        time3: course.schedules[2]?.time || null,
+        id: crypto.randomUUID() // Adicionar UUID para a chave primária
       };
 
       // Inserir novos horários

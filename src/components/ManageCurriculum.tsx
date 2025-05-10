@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Course, Prerequisite, CurriculumData } from '@/types/curriculum';
@@ -309,6 +309,11 @@ const ManageCurriculum: React.FC<ManageCurriculumProps> = ({ onDataChange }) => 
                 (editingCourse ? 'Editar Disciplina' : 'Adicionar Disciplina') : 
                 'Adicionar Pré-requisito'}
             </DialogTitle>
+            <DialogDescription>
+              {dialogType === 'course' ? 
+                (editingCourse ? 'Edite os detalhes da disciplina abaixo.' : 'Preencha os detalhes da nova disciplina abaixo.') : 
+                'Selecione as disciplinas para criar um novo pré-requisito.'}
+            </DialogDescription>
           </DialogHeader>
           
           {dialogType === 'course' ? (
