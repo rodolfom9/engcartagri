@@ -1,4 +1,3 @@
-
 import { supabase } from '../integrations/supabase/client';
 import { Course, Prerequisite, CurriculumData } from '../types/curriculum';
 import { defaultCurriculumData } from '../data/courses';
@@ -216,34 +215,60 @@ export const removePrerequisiteFromSupabase = async (
 export const markCourseCompletedInSupabase = async (
   courseId: string
 ): Promise<boolean> => {
-  const { error } = await supabase.from('disciplinas_concluidas').insert({
-    disciplina_id: courseId,
-    created_at: new Date().toISOString()
-  });
+  try {
+    // Get the current authenticated user
+    const { data: session } = await supabase.auth.getSession();
+    if (!session?.session?.user) {
+      console.error('Usuário não autenticado ao marcar disciplina como concluída');
+      return false;
+    }
 
-  if (error) {
+    const { error } = await supabase.from('disciplinas_concluidas').insert({
+      disciplina_id: courseId,
+      user_id: session.session.user.id,
+      created_at: new Date().toISOString()
+    });
+
+    if (error) {
+      console.error('Erro ao marcar disciplina como concluída:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
     console.error('Erro ao marcar disciplina como concluída:', error);
     return false;
   }
-
-  return true;
 };
 
 // Desmarcar disciplina como concluída no Supabase
 export const unmarkCourseCompletedInSupabase = async (
   courseId: string
 ): Promise<boolean> => {
-  const { error } = await supabase
-    .from('disciplinas_concluidas')
-    .delete()
-    .eq('disciplina_id', courseId);
+  try {
+    // Get the current authenticated user
+    const { data: session } = await supabase.auth.getSession();
+    if (!session?.session?.user) {
+      console.error('Usuário não autenticado ao desmarcar disciplina como concluída');
+      return false;
+    }
+    
+    const { error } = await supabase
+      .from('disciplinas_concluidas')
+      .delete()
+      .eq('disciplina_id', courseId)
+      .eq('user_id', session.session.user.id);
 
-  if (error) {
+    if (error) {
+      console.error('Erro ao desmarcar disciplina como concluída:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
     console.error('Erro ao desmarcar disciplina como concluída:', error);
     return false;
   }
-
-  return true;
 };
 
 // Inicializar dados no Supabase (usado quando não há dados)
@@ -299,4 +324,4 @@ export const initializeSupabaseData = async (): Promise<boolean> => {
   }
 
   return true;
-}; 
+};
