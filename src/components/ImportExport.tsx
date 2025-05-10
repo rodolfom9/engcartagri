@@ -1,91 +1,124 @@
-
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { CurriculumData } from '@/types/curriculum';
-import { loadCurriculumData, importCurriculumData } from '@/lib/curriculumStorage';
-import { useToast } from '@/components/ui/use-toast';
+import { Button } from './ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import ImportDefaultData from './ImportDefaultData';
+import { useToast } from './ui/use-toast';
 
-interface ImportExportProps {
-  onImport: () => void;
-}
-
-const ImportExport: React.FC<ImportExportProps> = ({ onImport }) => {
+const ImportExport = ({ onImport }) => {
+  const [importFile, setImportFile] = useState(null);
   const { toast } = useToast();
-  const [importData, setImportData] = useState('');
 
-  const handleExport = () => {
-    const data = loadCurriculumData();
-    const jsonString = JSON.stringify(data, null, 2);
-    setImportData(jsonString);
-
-    // Also copy to clipboard
-    navigator.clipboard.writeText(jsonString)
-      .then(() => {
-        toast({
-          title: "Copied to clipboard",
-          description: "The curriculum data has been copied to your clipboard"
-        });
-      })
-      .catch(() => {
-        toast({
-          title: "Copy failed",
-          description: "Please manually copy the text from the box below",
-          variant: "destructive"
-        });
-      });
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    setImportFile(file);
   };
 
   const handleImport = () => {
-    try {
-      const data = JSON.parse(importData) as CurriculumData;
-      
-      // Basic validation
-      if (!data.courses || !Array.isArray(data.courses) || 
-          !data.prerequisites || !Array.isArray(data.prerequisites)) {
-        throw new Error("Invalid data format");
-      }
-
-      importCurriculumData(data);
-      onImport();
-      
+    if (!importFile) {
       toast({
-        title: "Import successful",
-        description: `Imported ${data.courses.length} courses and ${data.prerequisites.length} prerequisites`
+        title: 'Erro',
+        description: 'Por favor, selecione um arquivo para importar.',
+        variant: 'destructive',
       });
-      
-      setImportData('');
-    } catch (error) {
-      toast({
-        title: "Import failed",
-        description: "The data format is invalid. Please check and try again.",
-        variant: "destructive"
-      });
+      return;
     }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const jsonData = JSON.parse(event.target.result);
+        localStorage.setItem('curriculum_data', JSON.stringify(jsonData));
+        onImport();
+        toast({
+          title: 'Sucesso',
+          description: 'Currículo importado com sucesso!',
+        });
+      } catch (error) {
+        toast({
+          title: 'Erro',
+          description: 'Erro ao importar o currículo. Verifique o formato do arquivo.',
+          variant: 'destructive',
+        });
+      }
+    };
+    reader.readAsText(importFile);
+  };
+
+  const handleExport = () => {
+    const data = localStorage.getItem('curriculum_data');
+    if (!data) {
+      toast({
+        title: 'Erro',
+        description: 'Não há dados para exportar.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'curriculum_data.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Import/Export Curriculum Data</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex space-x-4">
-          <Button onClick={handleExport} className="flex-1">Export Data</Button>
-          <Button onClick={handleImport} disabled={!importData} className="flex-1">Import Data</Button>
-        </div>
-        <Textarea
-          placeholder="Paste curriculum data here to import, or export to see the data..."
-          value={importData}
-          onChange={e => setImportData(e.target.value)}
-          className="min-h-[200px] font-mono text-sm"
-        />
-      </CardContent>
-      <CardFooter className="text-sm text-gray-500">
-        Use this feature to backup your curriculum data or share it with others.
-      </CardFooter>
-    </Card>
+    <div className="grid grid-cols-1 gap-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Importar/Exportar dados do currículo</CardTitle>
+          <CardDescription>
+            Você pode importar ou exportar os dados do currículo em formato JSON.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="import">
+            <TabsList className="mb-4">
+              <TabsTrigger value="import">Importar</TabsTrigger>
+              <TabsTrigger value="export">Exportar</TabsTrigger>
+            </TabsList>
+            <TabsContent value="import">
+              <div className="flex flex-col space-y-4">
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={handleFileChange}
+                  className="hidden"
+                  id="import-file"
+                />
+                <label
+                  htmlFor="import-file"
+                  className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                >
+                  Selecionar Arquivo
+                </label>
+                <Button onClick={handleImport}>Importar Currículo</Button>
+              </div>
+            </TabsContent>
+            <TabsContent value="export">
+              <Button onClick={handleExport}>Exportar Currículo</Button>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Importar dados padrão</CardTitle>
+          <CardDescription>
+            Importe os dados padrão do currículo diretamente para o Supabase.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ImportDefaultData />
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

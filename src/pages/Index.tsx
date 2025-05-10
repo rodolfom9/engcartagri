@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
@@ -8,6 +7,7 @@ import CurriculumFlow from '../components/CurriculumFlow';
 import ManageCurriculum from '../components/ManageCurriculum';
 import ImportExport from '../components/ImportExport';
 import { loadCurriculumData, loadCurriculumDataAsync } from '../lib/curriculumStorage';
+import { initializeSupabaseData } from '../lib/supabaseService';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../integrations/supabase/client';
 
@@ -20,6 +20,9 @@ const Index = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Initialize data in Supabase if needed
+        await initializeSupabaseData();
+        
         const data = await loadCurriculumDataAsync();
         setCoursesCount(data.courses.length);
         setPrerequisitesCount(data.prerequisites.length);
