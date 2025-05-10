@@ -181,9 +181,15 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
       // Ensure the schedules array is properly set up based on scheduleCount
       const updatedCourse = { ...course };
       
-      // Trim schedules array to match the scheduleCount
+      // Trim schedules array to match the scheduleCount and ensure all schedules are valid
       if (updatedCourse.schedules && scheduleCount > 0) {
-        updatedCourse.schedules = updatedCourse.schedules.slice(0, scheduleCount);
+        updatedCourse.schedules = updatedCourse.schedules
+          .slice(0, scheduleCount)
+          .map(schedule => ({
+            day: schedule.day || '',
+            time: schedule.time || ''
+          }))
+          .filter(schedule => schedule.day && schedule.time); // Remove invalid schedules
       }
       
       console.log('Submitting course with schedules:', updatedCourse);
@@ -209,6 +215,7 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
 
       onSave(updatedCourse);
     } catch (error: any) {
+      console.error('Erro ao salvar disciplina:', error);
       toast({
         title: "Erro",
         description: error.message || "Falha ao salvar a disciplina",

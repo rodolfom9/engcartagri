@@ -170,25 +170,30 @@ export const saveCourseToSupabase = async (course: Course): Promise<void> => {
 
       console.log('Dados do horário a serem salvos:', scheduleData);
 
-      // Primeiro, remover horário existente
-      const { error: deleteError } = await supabase
-        .from('horarios')
-        .delete()
-        .eq('disciplina_id', course.id);
+      try {
+        // Primeiro, remover horário existente
+        const { error: deleteError } = await supabase
+          .from('horarios')
+          .delete()
+          .eq('disciplina_id', course.id);
 
-      if (deleteError) {
-        console.error('Erro ao deletar horário existente:', deleteError);
-        throw deleteError;
-      }
+        if (deleteError) {
+          console.error('Erro ao deletar horário existente:', deleteError);
+          throw deleteError;
+        }
 
-      // Inserir novo horário
-      const { error: scheduleError } = await supabase
-        .from('horarios')
-        .insert(scheduleData);
+        // Inserir novo horário
+        const { error: scheduleError } = await supabase
+          .from('horarios')
+          .insert([scheduleData]); // Enviar como array
 
-      if (scheduleError) {
-        console.error('Erro ao inserir horário:', scheduleError);
-        throw scheduleError;
+        if (scheduleError) {
+          console.error('Erro ao inserir horário:', scheduleError);
+          throw scheduleError;
+        }
+      } catch (error) {
+        console.error('Erro ao manipular horários:', error);
+        throw error;
       }
     }
   } catch (error) {
