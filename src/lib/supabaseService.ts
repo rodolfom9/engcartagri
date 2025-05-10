@@ -293,14 +293,7 @@ export const initializeSupabaseData = async (): Promise<boolean> => {
 
   // Inserir disciplinas
   const coursesData = defaultCurriculumData.courses.map(course => ({
-    id: course.id,
-    name: course.name,
-    period: course.period,
-    row: course.row,
-    hours: course.hours,
-    type: course.type,
-    credits: course.credits,
-    professor: course.professor || null,
+    ...course,
     created_at: now,
     updated_at: now
   }));
@@ -331,66 +324,4 @@ export const initializeSupabaseData = async (): Promise<boolean> => {
   }
 
   return true;
-};
-
-// Função para importar os dados do arquivo diretamente para o Supabase
-export const importDefaultDataToSupabase = async (): Promise<boolean> => {
-  try {
-    console.log('Iniciando importação de dados padrão para o Supabase...');
-    
-    // Limpar dados existentes antes de importar
-    await supabase.from('disciplinas_concluidas').delete().neq('id', '0');
-    await supabase.from('horarios').delete().neq('id', '0');
-    await supabase.from('prerequisitos').delete().neq('id', '0');
-    await supabase.from('disciplinas').delete().neq('id', '0');
-    
-    const now = new Date().toISOString();
-    
-    // Preparar dados de disciplinas
-    const coursesData = defaultCurriculumData.courses.map(course => ({
-      id: course.id,
-      name: course.name,
-      period: course.period,
-      row: course.row,
-      hours: course.hours,
-      type: course.type,
-      credits: course.credits,
-      professor: course.professor || null,
-      created_at: now,
-      updated_at: now
-    }));
-    
-    // Inserir disciplinas
-    const { error: coursesError } = await supabase
-      .from('disciplinas')
-      .insert(coursesData);
-    
-    if (coursesError) {
-      console.error('Erro ao importar disciplinas:', coursesError);
-      return false;
-    }
-    
-    // Preparar dados de pré-requisitos
-    const prerequisitesData = defaultCurriculumData.prerequisites.map(prereq => ({
-      from_disciplina: prereq.from,
-      to_disciplina: prereq.to,
-      created_at: now
-    }));
-    
-    // Inserir pré-requisitos
-    const { error: prerequisitesError } = await supabase
-      .from('prerequisitos')
-      .insert(prerequisitesData);
-    
-    if (prerequisitesError) {
-      console.error('Erro ao importar pré-requisitos:', prerequisitesError);
-      return false;
-    }
-    
-    console.log('Dados padrão importados com sucesso para o Supabase!');
-    return true;
-  } catch (error) {
-    console.error('Erro durante a importação de dados padrão:', error);
-    return false;
-  }
 };
