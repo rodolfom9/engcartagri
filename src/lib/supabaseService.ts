@@ -163,51 +163,27 @@ export const saveCourseToSupabase = async (course: Course): Promise<void> => {
       if (insertError) throw insertError;
     }
 
-    // Preparar dados do horário
-    const scheduleData: any = {
-      disciplina_id: course.id,
-      day1: null,
-      time1: null,
-      day2: null,
-      time2: null,
-      day3: null,
-      time3: null
-    };
-
-    // Adicionar apenas os campos de horário necessários com base no número de aulas
-    if (course.schedules && course.schedules.length > 0) {
-      if (numAulas >= 1 && course.schedules[0]) {
-        scheduleData.day1 = course.schedules[0].day;
-        scheduleData.time1 = course.schedules[0].time;
-      }
-      
-      if (numAulas >= 2 && course.schedules[1]) {
-        scheduleData.day2 = course.schedules[1].day;
-        scheduleData.time2 = course.schedules[1].time;
-      }
-      
-      if (numAulas >= 3 && course.schedules[2]) {
-        scheduleData.day3 = course.schedules[2].day;
-        scheduleData.time3 = course.schedules[2].time;
-      }
-    }
-
-    // Verificar se já existe um horário para esta disciplina
-    const { data: existingSchedule } = await supabase
+    // Primeiro, remover qualquer horário existente para esta disciplina
+    const { error: deleteError } = await supabase
       .from('horarios')
-      .select('id')
-      .eq('disciplina_id', course.id)
-      .single();
+      .delete()
+      .eq('disciplina_id', course.id);
 
-    if (existingSchedule) {
-      // Atualizar horário existente
-      const { error: updateError } = await supabase
-        .from('horarios')
-        .update(scheduleData)
-        .eq('id', existingSchedule.id);
+    if (deleteError) throw deleteError;
 
-      if (updateError) throw updateError;
-    } else {
+    // Se houver horários para salvar
+    if (course.schedules && course.schedules.length > 0) {
+      // Preparar dados do horário
+      const scheduleData = {
+        disciplina_id: course.id,
+        day1: course.schedules[0]?.day || null,
+        time1: course.schedules[0]?.time || null,
+        day2: numAulas >= 2 ? (course.schedules[1]?.day || null) : null,
+        time2: numAulas >= 2 ? (course.schedules[1]?.time || null) : null,
+        day3: numAulas >= 3 ? (course.schedules[2]?.day || null) : null,
+        time3: numAulas >= 3 ? (course.schedules[2]?.time || null) : null
+      };
+
       // Inserir novo horário
       const { error: insertError } = await supabase
         .from('horarios')
