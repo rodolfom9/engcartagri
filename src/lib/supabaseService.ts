@@ -232,6 +232,15 @@ export const saveCourseToSupabase = async (course: Course): Promise<boolean> => 
 // Excluir disciplina do Supabase
 export const deleteCourseFromSupabase = async (courseId: string): Promise<boolean> => {
   try {
+    // Verificar autenticação do usuário
+    const { data: session } = await supabase.auth.getSession();
+    if (!session?.session?.user) {
+      console.error('Usuário não autenticado ao excluir disciplina');
+      return false;
+    }
+
+    const userId = session.session.user.id;
+
     // Excluir disciplinas concluídas primeiro (restrição de chave estrangeira)
     const { error: completedCoursesError } = await supabase
       .from('disciplinas_concluidas')

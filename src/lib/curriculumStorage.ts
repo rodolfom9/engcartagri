@@ -254,14 +254,22 @@ export const deleteCourse = async (courseId: string): Promise<CurriculumData> =>
     
     // Delete from Supabase if user is authenticated
     if (userData?.session?.user) {
+      console.log(`Tentando excluir disciplina ${courseId} do Supabase...`);
+      
       // Usar a função deleteCourseFromSupabase que lida com restrições de chave estrangeira
       const success = await deleteCourseFromSupabase(courseId);
       if (!success) {
         console.error('Erro ao excluir disciplina no Supabase');
+        throw new Error('Erro ao excluir disciplina no Supabase. Verifique o console para mais detalhes.');
       }
+      
+      console.log(`Disciplina ${courseId} excluída com sucesso do Supabase`);
+    } else {
+      console.warn('Usuário não autenticado. Disciplina excluída apenas localmente.');
     }
   } catch (error) {
     console.error('Error deleting course from Supabase:', error);
+    throw error; // Propagar o erro para tratamento adequado no componente
   }
   
   return data;

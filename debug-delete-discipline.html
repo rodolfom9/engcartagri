@@ -42,6 +42,9 @@
         button.debug {
             background-color: #2196F3;
         }
+        button.orphan {
+            background-color: #FF9800;
+        }
         .panel {
             background-color: #fff;
             border: 1px solid #ddd;
@@ -64,41 +67,40 @@
             margin-top: 0;
             color: #333;
         }
-        .logs {
-            background-color: #f5f5f5;
+        .log-entry {
+            padding: 5px;
+            margin: 2px 0;
+            border-radius: 3px;
+        }
+        .log-entry.info {
+            background-color: #e8f4fd;
+        }
+        .log-entry.success {
+            background-color: #e6f8e6;
+        }
+        .log-entry.warning {
+            background-color: #fff8e8;
+        }
+        .log-entry.error {
+            background-color: #ffe8e8;
+        }
+        #logs {
+            height: 300px;
+            overflow-y: auto;
+            background-color: #f8f8f8;
+            padding: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
-            padding: 10px;
-            margin-top: 15px;
-            max-height: 300px;
-            overflow-y: auto;
-            font-family: monospace;
-            white-space: pre-wrap;
-        }
-        .log-entry {
-            margin-bottom: 5px;
-            padding: 3px 0;
-            border-bottom: 1px solid #eee;
-        }
-        .success {
-            color: #4CAF50;
+            margin-top: 20px;
         }
         .error {
             color: #f44336;
         }
-        .info {
-            color: #2196F3;
+        .success {
+            color: #4CAF50;
         }
         .warning {
-            color: #ff9800;
-        }
-        .login-form {
-            margin-bottom: 20px;
-        }
-        .login-form input {
-            padding: 8px;
-            margin-right: 10px;
-            width: 200px;
+            color: #FF9800;
         }
     </style>
 </head>
@@ -106,30 +108,44 @@
     <div class="container">
         <h1>Depurador de Exclusão de Disciplinas</h1>
         
-        <div class="panel" id="auth-panel">
-            <h2>Autenticação</h2>
-            <div id="auth-status">Verificando status de autenticação...</div>
+        <div class="panel">
+            <h2>Status de Autenticação</h2>
+            <div id="auth-status">
+                <p class="warning">Verificando autenticação...</p>
+            </div>
             
-            <div class="login-form" id="login-form">
-                <input type="email" id="email" placeholder="Email">
-                <input type="password" id="password" placeholder="Senha">
-                <button id="login-btn">Entrar</button>
+            <div id="login-form" style="display: none;">
+                <h3>Login</h3>
+                <div style="margin-bottom: 10px;">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" style="padding: 5px; width: 250px;">
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <label for="password">Senha:</label>
+                    <input type="password" id="password" style="padding: 5px; width: 250px;">
+                </div>
+                <button id="login-btn">Login</button>
             </div>
         </div>
         
         <div class="panel">
             <h2>Disciplinas</h2>
-            <button id="loadDisciplines">Carregar Disciplinas</button>
-            <div id="disciplineList"></div>
+            <div>
+                <button id="loadDisciplines">Carregar Disciplinas</button>
+                <button id="checkOrphans" class="orphan">Verificar Registros Órfãos</button>
+            </div>
+            <div id="disciplineList">
+                <p>Clique em "Carregar Disciplinas" para ver a lista.</p>
+            </div>
         </div>
         
         <div class="panel">
             <h2>Logs</h2>
             <button id="clearLogs">Limpar Logs</button>
-            <div id="logs" class="logs"></div>
+            <div id="logs"></div>
         </div>
     </div>
-
+    
     <script>
         // Inicializar Supabase client
         const SUPABASE_URL = "https://vcqmpvfgepruwgxzfjzu.supabase.co";
@@ -237,6 +253,120 @@
             }
         });
         
+        // Verificar registros órfãos
+        document.getElementById('checkOrphans').addEventListener('click', checkOrphanedRecords);
+        
+        async function checkOrphanedRecords() {
+            log('Verificando registros órfãos nas tabelas...', 'info');
+            const user = await checkAuth();
+            
+            if (!user) {
+                log('Você precisa estar autenticado para verificar registros órfãos', 'error');
+                return;
+            }
+            
+            try {
+                // 1. Obter todas as disciplinas
+                log('1. Obtendo todas as disciplinas...', 'info');
+                const { data: disciplinas, error: disciplinasError } = await supabase
+                    .from('disciplinas')
+                    .select('id');
+                
+                if (disciplinasError) {
+                    log(`Erro ao obter disciplinas: ${disciplinasError.message}`, 'error');
+                    return;
+                }
+                
+                const disciplinaIds = disciplinas.map(d => d.id);
+                log(`Encontradas ${disciplinaIds.length} disciplinas`, 'info');
+                
+                // 2. Verificar horários órfãos
+                log('2. Verificando horários sem disciplina associada...', 'info');
+                const { data: horarios, error: horariosError } = await supabase
+                    .from('horarios')
+                    .select('*');
+                
+                if (horariosError) {
+                    log(`Erro ao obter horários: ${horariosError.message}`, 'error');
+                    return;
+                }
+                
+                // Encontrar registros de horários para disciplinas que não existem mais
+                const orphanedSchedules = horarios.filter(h => !disciplinaIds.includes(h.disciplina_id));
+                
+                if (orphanedSchedules.length > 0) {
+                    log(`Encontrados ${orphanedSchedules.length} registros de horários órfãos`, 'warning');
+                    orphanedSchedules.forEach(h => {
+                        log(`Horário órfão: ID=${h.id}, Disciplina ID=${h.disciplina_id}`, 'warning');
+                    });
+                    
+                    // Perguntar se deseja limpar
+                    if (confirm(`Foram encontrados ${orphanedSchedules.length} registros de horários órfãos. Deseja removê-los?`)) {
+                        for (const h of orphanedSchedules) {
+                            const { error: deleteError } = await supabase
+                                .from('horarios')
+                                .delete()
+                                .eq('id', h.id);
+                            
+                            if (deleteError) {
+                                log(`Erro ao remover horário órfão ${h.id}: ${deleteError.message}`, 'error');
+                            } else {
+                                log(`Horário órfão ${h.id} removido com sucesso`, 'success');
+                            }
+                        }
+                    }
+                } else {
+                    log('✓ Nenhum horário órfão encontrado', 'success');
+                }
+                
+                // 3. Verificar prerequisitos órfãos
+                log('3. Verificando pré-requisitos sem disciplina associada...', 'info');
+                const { data: prereqs, error: prereqsError } = await supabase
+                    .from('prerequisitos')
+                    .select('*');
+                
+                if (prereqsError) {
+                    log(`Erro ao obter pré-requisitos: ${prereqsError.message}`, 'error');
+                    return;
+                }
+                
+                // Encontrar registros de pré-requisitos para disciplinas que não existem mais
+                const orphanedPrereqs = prereqs.filter(p => 
+                    !disciplinaIds.includes(p.from_disciplina) || 
+                    !disciplinaIds.includes(p.to_disciplina)
+                );
+                
+                if (orphanedPrereqs.length > 0) {
+                    log(`Encontrados ${orphanedPrereqs.length} registros de pré-requisitos órfãos`, 'warning');
+                    orphanedPrereqs.forEach(p => {
+                        log(`Pré-requisito órfão: ID=${p.id}, De=${p.from_disciplina}, Para=${p.to_disciplina}`, 'warning');
+                    });
+                    
+                    // Perguntar se deseja limpar
+                    if (confirm(`Foram encontrados ${orphanedPrereqs.length} registros de pré-requisitos órfãos. Deseja removê-los?`)) {
+                        for (const p of orphanedPrereqs) {
+                            const { error: deleteError } = await supabase
+                                .from('prerequisitos')
+                                .delete()
+                                .eq('id', p.id);
+                            
+                            if (deleteError) {
+                                log(`Erro ao remover pré-requisito órfão ${p.id}: ${deleteError.message}`, 'error');
+                            } else {
+                                log(`Pré-requisito órfão ${p.id} removido com sucesso`, 'success');
+                            }
+                        }
+                    }
+                } else {
+                    log('✓ Nenhum pré-requisito órfão encontrado', 'success');
+                }
+                
+                log('Verificação de registros órfãos concluída', 'success');
+            } catch (err) {
+                log(`Erro ao verificar registros órfãos: ${err.message}`, 'error');
+            }
+        }
+        
         // Carregar disciplinas
         document.getElementById('loadDisciplines').addEventListener('click', loadDisciplines);
         
@@ -321,7 +451,8 @@
                 const { error: completedError } = await supabase
                     .from('disciplinas_concluidas')
                     .delete()
-                    .eq('disciplina_id', id);
+                    .eq('disciplina_id', id)
+                    .eq('user_id', user.id);
                 
                 if (completedError) {
                     log(`Erro ao excluir disciplinas concluídas: ${completedError.message}`, 'error');
@@ -373,7 +504,8 @@
                 const { error: disciplineError } = await supabase
                     .from('disciplinas')
                     .delete()
-                    .eq('id', id);
+                    .eq('id', id)
+                    .eq('user_id', user.id);
                 
                 if (disciplineError) {
                     log(`Erro ao excluir disciplina: ${disciplineError.message}`, 'error');
@@ -448,11 +580,11 @@
                     log('✓ Nenhum registro em prerequisitos (to)', 'success');
                 }
                 
-                // Verificar horarios
-                log(`Verificando registros em horarios para ${id}...`);
+                // Verificar horários
+                log(`Verificando registros em horarios para disciplina ${id}...`);
                 const { data: horariosData, error: horariosError } = await supabase
                     .from('horarios')
-                    .select('id, nome')
+                    .select('*')
                     .eq('disciplina_id', id);
                 
                 if (horariosError) {
@@ -460,19 +592,22 @@
                 } else if (horariosData && horariosData.length > 0) {
                     log(`Encontrados ${horariosData.length} registros em horarios`, 'info');
                     horariosData.forEach(item => {
-                        log(`- ID: ${item.id}, Nome: ${item.nome}`, 'info');
+                        log(`- ID: ${item.id}, Nome: ${item.nome}, Aulas: ${item.num_aulas}`, 'info');
+                        if (item.day1 && item.time1) log(`  - Dia/Hora 1: ${item.day1}/${item.time1}`, 'info');
+                        if (item.day2 && item.time2) log(`  - Dia/Hora 2: ${item.day2}/${item.time2}`, 'info');
+                        if (item.day3 && item.time3) log(`  - Dia/Hora 3: ${item.day3}/${item.time3}`, 'info');
                     });
                 } else {
                     log('✓ Nenhum registro em horarios', 'success');
                 }
                 
-                log('Depuração concluída!', 'success');
+                log('Depuração concluída', 'success');
             } catch (err) {
-                log(`Erro durante depuração: ${err.message}`, 'error');
+                log(`Erro durante a depuração: ${err.message}`, 'error');
             }
         }
         
-        // Verificar autenticação ao carregar
+        // Inicializar
         checkAuth();
     </script>
 </body>
