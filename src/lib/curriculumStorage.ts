@@ -113,8 +113,6 @@ export const loadCurriculumDataAsync = async (): Promise<CurriculumData> => {
 
     if (coursesError) throw coursesError;
 
-    console.log('Raw courses data from Supabase:', courses);
-
     // Fetch prerequisites
     const { data: prerequisites, error: prerequisitesError } = await supabase
       .from('prerequisitos')

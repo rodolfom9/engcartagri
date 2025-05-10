@@ -149,8 +149,6 @@ export const saveCourseToSupabase = async (course: Course): Promise<boolean> => 
       updated_at: now
     };
 
-    console.log('Dados da disciplina a serem salvos:', courseData);
-
     // Verificar se a disciplina já existe
     const { data: existingCourse, error: checkError } = await supabase
       .from('disciplinas')
@@ -158,17 +156,13 @@ export const saveCourseToSupabase = async (course: Course): Promise<boolean> => 
       .eq('id', course.id)
       .single();
 
-    if (checkError && checkError.code !== 'PGRST116') {
-      console.error('Erro ao verificar disciplina existente:', checkError);
-      return false;
-    }
-
     if (existingCourse) {
       // Se existir, atualizar
       const { error: updateError } = await supabase
         .from('disciplinas')
         .update(courseData)
-        .eq('id', course.id);
+        .eq('id', course.id)
+        .eq('user_id', userData.session.user.id);
 
       if (updateError) {
         console.error('Erro ao atualizar disciplina:', updateError);
@@ -203,7 +197,6 @@ export const saveCourseToSupabase = async (course: Course): Promise<boolean> => 
       // Preparar dados dos horários
       const schedulesData = {
         disciplina_id: course.id,
-        nome: course.name,
         created_at: now,
         day1: course.schedules[0]?.day || null,
         time1: course.schedules[0]?.time || null,
@@ -211,7 +204,7 @@ export const saveCourseToSupabase = async (course: Course): Promise<boolean> => 
         time2: course.schedules[1]?.time || null,
         day3: course.schedules[2]?.day || null,
         time3: course.schedules[2]?.time || null,
-        id: crypto.randomUUID()
+        id: crypto.randomUUID() // Adicionar UUID para a chave primária
       };
 
       // Inserir novos horários
@@ -474,6 +467,7 @@ export const initializeSupabaseData = async (): Promise<boolean> => {
       const scheduleData: any = {
         disciplina_id: course.id,
         nome: course.name,
+        num_aulas: course.schedules ? course.schedules.length : 0,
         created_at: now
       };
 
