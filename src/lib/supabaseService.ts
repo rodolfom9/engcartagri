@@ -173,15 +173,24 @@ export const saveCourseToSupabase = async (course: Course): Promise<void> => {
 
     // Se houver horários para salvar
     if (course.schedules && course.schedules.length > 0) {
-      // Preparar dados do horário
+      // Verificar se os horários estão no formato correto
+      const validSchedules = course.schedules.filter(schedule => 
+        schedule && typeof schedule.day === 'string' && typeof schedule.time === 'string'
+      );
+
+      if (validSchedules.length === 0) {
+        throw new Error('Nenhum horário válido encontrado');
+      }
+
+      // Preparar dados do horário exatamente como definido na tabela
       const scheduleData = {
         disciplina_id: course.id,
-        day1: course.schedules[0]?.day || null,
-        time1: course.schedules[0]?.time || null,
-        day2: numAulas >= 2 ? (course.schedules[1]?.day || null) : null,
-        time2: numAulas >= 2 ? (course.schedules[1]?.time || null) : null,
-        day3: numAulas >= 3 ? (course.schedules[2]?.day || null) : null,
-        time3: numAulas >= 3 ? (course.schedules[2]?.time || null) : null
+        day1: validSchedules[0]?.day || null,
+        time1: validSchedules[0]?.time || null,
+        day2: numAulas >= 2 ? (validSchedules[1]?.day || null) : null,
+        time2: numAulas >= 2 ? (validSchedules[1]?.time || null) : null,
+        day3: numAulas >= 3 ? (validSchedules[2]?.day || null) : null,
+        time3: numAulas >= 3 ? (validSchedules[2]?.time || null) : null
       };
 
       // Inserir novo horário
