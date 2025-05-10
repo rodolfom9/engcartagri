@@ -93,7 +93,7 @@ const Index = () => {
               Login só e usado pelo admin. Caso Encontre algum problema, entre em contato com o desenvolvedor.
               {!user && (
                 <span className="text-amber-600 ml-1">
-                  Login necessário para editar dados.
+                  **
                 </span>
               )}
             </p>
