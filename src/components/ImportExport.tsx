@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -27,7 +28,13 @@ const ImportExport = ({ onImport }) => {
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
-        const jsonData = JSON.parse(event.target.result);
+        // Check if the result is a string before parsing
+        const result = event.target.result;
+        if (typeof result !== 'string') {
+          throw new Error('Invalid file format');
+        }
+        
+        const jsonData = JSON.parse(result);
         localStorage.setItem('curriculum_data', JSON.stringify(jsonData));
         onImport();
         toast({
