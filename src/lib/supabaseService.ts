@@ -109,20 +109,6 @@ export const loadCurriculumDataFromSupabase = async (): Promise<CurriculumData> 
 // Salvar disciplina no Supabase
 export const saveCourseToSupabase = async (course: Course): Promise<boolean> => {
   try {
-    // Verificar se a disciplina já existe
-    const { data: existingCourse, error: checkError } = await supabase
-      .from('disciplinas')
-      .select('id')
-      .eq('id', course.id)
-      .single();
-
-    if (checkError && checkError.code !== 'PGRST116') {
-      console.error('Erro ao verificar disciplina:', checkError);
-      return false;
-    }
-
-    const now = new Date().toISOString();
-
     // Get the current authenticated user
     const { data: userData } = await supabase.auth.getSession();
     
@@ -131,93 +117,112 @@ export const saveCourseToSupabase = async (course: Course): Promise<boolean> => 
       return false;
     }
 
-    // Upsert da disciplina (insert ou update)
-    const { error } = await supabase
+    const now = new Date().toISOString();
+
+    // Preparar dados da disciplina
+    const courseData: {
+      id: string;
+      name: string;
+      period: number;
+      row: number;
+      hours: string;
+      type: Course['type'];
+      credits: number;
+      professor: string | null;
+      user_id: string;
+      updated_at: string;
+      created_at?: string;
+    } = {
+      id: course.id,
+      name: course.name,
+      period: course.period,
+      row: course.row,
+      hours: course.hours,
+      type: course.type,
+      credits: course.credits,
+      professor: course.professor || null,
+      user_id: userData.session.user.id,
+      updated_at: now
+    };
+
+    // Verificar se a disciplina já existe
+    const { data: existingCourse, error: checkError } = await supabase
       .from('disciplinas')
-      .upsert({
-        id: course.id,
-        name: course.name,
-        period: course.period,
-        row: course.row,
-        hours: course.hours,
-        type: course.type,
-        credits: course.credits,
-        professor: course.professor || null,
-        user_id: userData.session.user.id,
-        updated_at: now,
-        created_at: existingCourse ? undefined : now
-      });
+      .select('id, user_id')
+      .eq('id', course.id)
+      .single();
 
-    if (error) {
-      console.error('Erro ao salvar disciplina:', error);
-      return false;
-    }
+    if (existingCourse) {
+      // Se existir, atualizar
+      const { error: updateError } = await supabase
+        .from('disciplinas')
+        .update(courseData)
+        .eq('id', course.id)
+        .eq('user_id', userData.session.user.id);
 
-    // Se houver horários, salvar ou atualizar
-    if (course.schedules && course.schedules.length > 0) {
-      // Primeiro verificar se já existe um registro de horário para esta disciplina
-      const { data: existingSchedule, error: checkScheduleError } = await supabase
-        .from('horarios')
-        .select('id')
-        .eq('disciplina_id', course.id)
-        .single();
-
-      // Preparar dados para inserção/atualização
-      const schedulesData: any = {
-        disciplina_id: course.id,
-        nome: course.name,
-        num_aulas: course.schedules.length,
-        updated_at: now
-      };
-
-      // Adicionar os campos de dia e hora conforme disponíveis
-      if (course.schedules[0]) {
-        schedulesData.day1 = course.schedules[0].day;
-        schedulesData.time1 = course.schedules[0].time;
-      }
-
-      if (course.schedules[1]) {
-        schedulesData.day2 = course.schedules[1].day;
-        schedulesData.time2 = course.schedules[1].time;
-      }
-
-      if (course.schedules[2]) {
-        schedulesData.day3 = course.schedules[2].day;
-        schedulesData.time3 = course.schedules[2].time;
-      }
-
-      // Se existir um registro, atualizar; senão, inserir
-      if (existingSchedule && !checkScheduleError) {
-        schedulesData.id = existingSchedule.id;
-        const { error: updateError } = await supabase
-          .from('horarios')
-          .update(schedulesData)
-          .eq('id', existingSchedule.id);
-
-        if (updateError) {
-          console.error('Erro ao atualizar horários:', updateError);
-          return false;
-        }
-      } else {
-        schedulesData.created_at = now;
-        const { error: insertError } = await supabase
-          .from('horarios')
-          .insert(schedulesData);
-
-        if (insertError) {
-          console.error('Erro ao inserir horários:', insertError);
-          return false;
-        }
+      if (updateError) {
+        console.error('Erro ao atualizar disciplina:', updateError);
+        return false;
       }
     } else {
-      // Se não tiver horários, remover registro existente
-      const { error: deleteError } = await supabase
+      // Se não existir, inserir
+      courseData.created_at = now;
+      const { error: insertError } = await supabase
+        .from('disciplinas')
+        .insert([courseData]);
+
+      if (insertError) {
+        console.error('Erro ao inserir disciplina:', insertError);
+        return false;
+      }
+    }
+
+    // Tratar os horários
+    if (course.schedules && course.schedules.length > 0) {
+      // Primeiro, excluir horários existentes
+      const { error: deleteSchedulesError } = await supabase
         .from('horarios')
         .delete()
         .eq('disciplina_id', course.id);
 
-      if (deleteError) {
-        console.error('Erro ao remover horários:', deleteError);
+      if (deleteSchedulesError) {
+        console.error('Erro ao excluir horários existentes:', deleteSchedulesError);
+        return false;
+      }
+
+      // Preparar dados dos horários
+      const schedulesData = {
+        disciplina_id: course.id,
+        nome: course.name,
+        num_aulas: course.schedules.length,
+        created_at: now,
+        updated_at: now,
+        day1: course.schedules[0]?.day || null,
+        time1: course.schedules[0]?.time || null,
+        day2: course.schedules[1]?.day || null,
+        time2: course.schedules[1]?.time || null,
+        day3: course.schedules[2]?.day || null,
+        time3: course.schedules[2]?.time || null
+      };
+
+      // Inserir novos horários
+      const { error: insertSchedulesError } = await supabase
+        .from('horarios')
+        .insert([schedulesData]);
+
+      if (insertSchedulesError) {
+        console.error('Erro ao inserir horários:', insertSchedulesError);
+        return false;
+      }
+    } else {
+      // Se não houver horários, remover registros existentes
+      const { error: deleteSchedulesError } = await supabase
+        .from('horarios')
+        .delete()
+        .eq('disciplina_id', course.id);
+
+      if (deleteSchedulesError) {
+        console.error('Erro ao limpar horários:', deleteSchedulesError);
         return false;
       }
     }
