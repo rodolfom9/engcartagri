@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Course, CourseType } from '@/types/curriculum';
-import { generateCourseId, addCourse, updateCourse } from '@/lib/curriculumStorage';
+import { addCourse, updateCourse } from '@/lib/curriculumStorage';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -133,8 +132,14 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
     const newErrors: Record<string, string> = {};
     
     // Required fields validation
+    if (!course.id) newErrors.id = "O ID da disciplina é obrigatório";
     if (!course.name) newErrors.name = "O nome da disciplina é obrigatório";
     if (!course.hours) newErrors.hours = "A carga horária é obrigatória";
+    
+    // ID format validation
+    if (course.id && !/^[A-Za-z0-9\-\.]+$/.test(course.id)) {
+      newErrors.id = "O ID deve conter apenas letras, números, pontos e hífens";
+    }
     
     // Professor validation (at least 3 characters)
     if (course.professor && course.professor.length < 3) {
@@ -191,9 +196,23 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
       
       console.log('Submitting course with schedules:', updatedCourse);
       
-      // Generate ID for new courses
+      // Check if ID already exists (for new courses)
       if (!isEditing) {
-        updatedCourse.id = generateCourseId(updatedCourse.name);
+        const { data: existingCourse } = await supabase
+          .from('disciplinas')
+          .select('id')
+          .eq('id', updatedCourse.id)
+          .single();
+
+        if (existingCourse) {
+          toast({
+            title: "Erro",
+            description: "Já existe uma disciplina com este ID",
+            variant: "destructive"
+          });
+          return;
+        }
+
         await addCourse(updatedCourse);
         toast({
           title: "Sucesso",
@@ -219,17 +238,32 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="name">Nome da Disciplina</Label>
-        <Input 
-          id="name" 
-          name="name" 
-          value={course.name} 
-          onChange={handleChange}
-          placeholder="Digite o nome da disciplina" 
-          className={errors.name ? "border-red-500" : ""}
-        />
-        {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="name">Nome da Disciplina</Label>
+          <Input 
+            id="name" 
+            name="name" 
+            value={course.name} 
+            onChange={handleChange}
+            placeholder="Digite o nome da disciplina" 
+            className={errors.name ? "border-red-500" : ""}
+          />
+          {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="id">ID da Disciplina</Label>
+          <Input 
+            id="id" 
+            name="id" 
+            value={course.id} 
+            onChange={handleChange}
+            placeholder="Digite o ID da disciplina" 
+            className={errors.id ? "border-red-500" : ""}
+          />
+          {errors.id && <p className="text-xs text-red-500">{errors.id}</p>}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">

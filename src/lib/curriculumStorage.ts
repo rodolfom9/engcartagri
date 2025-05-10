@@ -532,28 +532,6 @@ export const importCurriculumToSupabase = async (data: CurriculumData): Promise<
   }
 };
 
-// Utility function to generate a unique ID for new courses
-export const generateCourseId = (courseName: string): string => {
-  const baseId = courseName
-    .toLowerCase()
-    .replace(/[^\w\s]/gi, '')
-    .replace(/\s+/g, '')
-    .substring(0, 10);
-  
-  const data = loadCurriculumData();
-  const existingIds = new Set(data.courses.map(c => c.id));
-  
-  let id = baseId;
-  let counter = 1;
-  
-  while (existingIds.has(id)) {
-    id = `${baseId}${counter}`;
-    counter++;
-  }
-  
-  return id;
-};
-
 // Check if a course is completed
 export const isCourseCompleted = (courseId: string): boolean => {
   const data = loadCurriculumData();
