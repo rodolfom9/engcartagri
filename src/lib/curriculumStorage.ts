@@ -28,55 +28,70 @@ export const initializeData = async (): Promise<void> => {
 const importDefaultDataToSupabase = async (): Promise<void> => {
   try {
     // Format courses for Supabase insert
-    const courses = defaultCurriculumData.courses.map(course => ({
-      id: course.id,
-      name: course.name,
-      period: course.period,
-      row: course.row,
-      hours: course.hours,
-      type: course.type,
-      credits: course.credits,
-      professor: course.professor || null,
+    const coursesForInsert = defaultCurriculumData.courses.map(course => ({
+      ...course,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     }));
 
     // Insert courses
     const { error: coursesError } = await supabase
       .from('disciplinas')
-      .upsert(courses);
+      .insert(coursesForInsert);
 
     if (coursesError) throw coursesError;
 
     // Format prerequisites for Supabase insert
-    const prerequisites = defaultCurriculumData.prerequisites.map(prereq => ({
+    const prerequisitesForInsert = defaultCurriculumData.prerequisites.map(prereq => ({
       from_disciplina: prereq.from,
       to_disciplina: prereq.to,
+      created_at: new Date().toISOString()
     }));
 
     // Insert prerequisites
     const { error: prerequisitesError } = await supabase
       .from('prerequisitos')
-      .upsert(prerequisites);
+      .insert(prerequisitesForInsert);
 
     if (prerequisitesError) throw prerequisitesError;
 
-    // Insert course schedules if available
-    const schedules = [];
-    for (const course of defaultCurriculumData.courses) {
-      if (course.schedules && course.schedules.length > 0) {
-        for (const schedule of course.schedules) {
-          schedules.push({
-            disciplina_id: course.id,
-            day: schedule.day,
-            time: schedule.time,
-          });
-        }
-      }
-    }
+    // Format schedules for horarios table with new schema
+    const schedulesForInsert = defaultCurriculumData.courses
+      .filter(course => course.schedules && course.schedules.length > 0)
+      .map(course => {
+        const scheduleData: any = {
+          disciplina_id: course.id,
+          nome: course.name,
+          num_aulas: course.schedules ? course.schedules.length : 0,
+          created_at: new Date().toISOString()
+        };
 
-    if (schedules.length > 0) {
+        // Adicionar campos de dia e hora, se houver
+        if (course.schedules && course.schedules.length > 0) {
+          if (course.schedules[0]) {
+            scheduleData.day1 = course.schedules[0].day;
+            scheduleData.time1 = course.schedules[0].time;
+          }
+          
+          if (course.schedules[1]) {
+            scheduleData.day2 = course.schedules[1].day;
+            scheduleData.time2 = course.schedules[1].time;
+          }
+          
+          if (course.schedules[2]) {
+            scheduleData.day3 = course.schedules[2].day;
+            scheduleData.time3 = course.schedules[2].time;
+          }
+        }
+        
+        return scheduleData;
+      });
+
+    // Insert schedules if any
+    if (schedulesForInsert.length > 0) {
       const { error: schedulesError } = await supabase
         .from('horarios')
-        .upsert(schedules);
+        .insert(schedulesForInsert);
 
       if (schedulesError) throw schedulesError;
     }
@@ -84,6 +99,7 @@ const importDefaultDataToSupabase = async (): Promise<void> => {
     console.log('Default data imported to Supabase successfully');
   } catch (error) {
     console.error('Error importing default data to Supabase:', error);
+    throw error;
   }
 };
 
@@ -368,96 +384,131 @@ export const unmarkCourseCompleted = async (courseId: string): Promise<void> => 
   }
 };
 
-// Import full curriculum data 
-export const importCurriculumData = async (data: CurriculumData): Promise<CurriculumData> => {
-  saveCurriculumData(data);
-  
+// Import curriculum data to Supabase
+export const importCurriculumToSupabase = async (data: CurriculumData): Promise<boolean> => {
   try {
+    // Get user authentication data
     const { data: userData } = await supabase.auth.getSession();
     
+    if (!userData?.session?.user) {
+      console.error('User not authenticated');
+      return false;
+    }
+    
     // Import to Supabase if user is authenticated
-    if (userData?.session?.user) {
-      // Format courses for Supabase
-      const courses = data.courses.map(course => ({
-        id: course.id,
-        name: course.name,
-        period: course.period,
-        row: course.row,
-        hours: course.hours,
-        type: course.type,
-        credits: course.credits,
-        professor: course.professor || null,
-        user_id: userData.session.user.id
-      }));
+    
+    // Format courses for Supabase
+    const coursesForInsert = data.courses.map(course => ({
+      ...course,
+      user_id: userData.session.user.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }));
+    
+    // Insert all courses
+    await supabase
+      .from('disciplinas')
+      .delete()
+      .eq('user_id', userData.session.user.id);
       
-      // Clear existing data first (if user has permission)
-      await supabase
-        .from('disciplinas')
-        .delete()
-        .filter('user_id', 'eq', userData.session.user.id);
+    const { error: coursesError } = await supabase
+      .from('disciplinas')
+      .insert(coursesForInsert);
       
-      // Insert new courses
-      const { error: coursesError } = await supabase
-        .from('disciplinas')
-        .insert(courses);
+    if (coursesError) throw coursesError;
+    
+    // Format and insert prerequisites
+    const prerequisitesForInsert = data.prerequisites.map(prereq => ({
+      from_disciplina: prereq.from,
+      to_disciplina: prereq.to,
+      created_at: new Date().toISOString()
+    }));
+    
+    await supabase
+      .from('prerequisitos')
+      .delete()
+      .eq('from_disciplina', coursesForInsert.map(c => c.id));
       
-      if (coursesError) throw coursesError;
-      
-      // Format and insert prerequisites
-      const prerequisites = data.prerequisites.map(prereq => ({
-        from_disciplina: prereq.from,
-        to_disciplina: prereq.to
-      }));
-      
-      if (prerequisites.length > 0) {
-        const { error: prerequisitesError } = await supabase
-          .from('prerequisitos')
-          .insert(prerequisites);
+    if (prerequisitesForInsert.length > 0) {
+      const { error: prerequisitesError } = await supabase
+        .from('prerequisitos')
+        .insert(prerequisitesForInsert);
         
-        if (prerequisitesError) throw prerequisitesError;
-      }
-      
-      // Format and insert schedules
-      const schedules = [];
-      for (const course of data.courses) {
+      if (prerequisitesError) throw prerequisitesError;
+    }
+    
+    // Format and insert schedules
+    const schedulesForInsert = data.courses
+      .filter(course => course.schedules && course.schedules.length > 0)
+      .map(course => {
+        const scheduleData: any = {
+          disciplina_id: course.id,
+          nome: course.name,
+          num_aulas: course.schedules ? course.schedules.length : 0,
+          created_at: new Date().toISOString()
+        };
+
+        // Adicionar campos de dia e hora, se houver
         if (course.schedules && course.schedules.length > 0) {
-          for (const schedule of course.schedules) {
-            schedules.push({
-              disciplina_id: course.id,
-              day: schedule.day,
-              time: schedule.time
-            });
+          if (course.schedules[0]) {
+            scheduleData.day1 = course.schedules[0].day;
+            scheduleData.time1 = course.schedules[0].time;
+          }
+          
+          if (course.schedules[1]) {
+            scheduleData.day2 = course.schedules[1].day;
+            scheduleData.time2 = course.schedules[1].time;
+          }
+          
+          if (course.schedules[2]) {
+            scheduleData.day3 = course.schedules[2].day;
+            scheduleData.time3 = course.schedules[2].time;
           }
         }
-      }
-      
-      if (schedules.length > 0) {
-        const { error: schedulesError } = await supabase
-          .from('horarios')
-          .insert(schedules);
         
-        if (schedulesError) throw schedulesError;
-      }
+        return scheduleData;
+      });
+    
+    // Delete existing schedules and insert new ones
+    await supabase
+      .from('horarios')
+      .delete()
+      .in('disciplina_id', data.courses.map(c => c.id));
       
-      // Mark completed courses
-      const completedCourses = data.completedCourses.map(courseId => ({
+    if (schedulesForInsert.length > 0) {
+      const { error: schedulesError } = await supabase
+        .from('horarios')
+        .insert(schedulesForInsert);
+        
+      if (schedulesError) throw schedulesError;
+    }
+    
+    // Format and insert completed courses
+    if (data.completedCourses.length > 0) {
+      // Delete existing completed courses
+      await supabase
+        .from('disciplinas_concluidas')
+        .delete()
+        .eq('user_id', userData.session.user.id);
+        
+      const completedCoursesForInsert = data.completedCourses.map(courseId => ({
         disciplina_id: courseId,
-        user_id: userData.session.user.id
+        user_id: userData.session.user.id,
+        created_at: new Date().toISOString()
       }));
       
-      if (completedCourses.length > 0) {
-        const { error: completedCoursesError } = await supabase
-          .from('disciplinas_concluidas')
-          .insert(completedCourses);
+      const { error: completedCoursesError } = await supabase
+        .from('disciplinas_concluidas')
+        .insert(completedCoursesForInsert);
         
-        if (completedCoursesError) throw completedCoursesError;
-      }
+      if (completedCoursesError) throw completedCoursesError;
     }
+    
+    return true;
   } catch (error) {
     console.error('Error importing data to Supabase:', error);
+    return false;
   }
-  
-  return data;
 };
 
 // Utility function to generate a unique ID for new courses

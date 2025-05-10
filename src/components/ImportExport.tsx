@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { CurriculumData } from '@/types/curriculum';
-import { loadCurriculumData, importCurriculumData } from '@/lib/curriculumStorage';
+import { loadCurriculumData, importCurriculumToSupabase } from '@/lib/curriculumStorage';
 import { useToast } from '@/components/ui/use-toast';
 
 interface ImportExportProps {
@@ -37,7 +36,7 @@ const ImportExport: React.FC<ImportExportProps> = ({ onImport }) => {
       });
   };
 
-  const handleImport = () => {
+  const handleImport = async () => {
     try {
       const data = JSON.parse(importData) as CurriculumData;
       
@@ -47,15 +46,24 @@ const ImportExport: React.FC<ImportExportProps> = ({ onImport }) => {
         throw new Error("Invalid data format");
       }
 
-      importCurriculumData(data);
-      onImport();
+      const success = await importCurriculumToSupabase(data);
       
-      toast({
-        title: "Import successful",
-        description: `Imported ${data.courses.length} courses and ${data.prerequisites.length} prerequisites`
-      });
-      
-      setImportData('');
+      if (success) {
+        onImport();
+        
+        toast({
+          title: "Import successful",
+          description: `Imported ${data.courses.length} courses and ${data.prerequisites.length} prerequisites`
+        });
+        
+        setImportData('');
+      } else {
+        toast({
+          title: "Import to Supabase failed",
+          description: "Failed to save data to the database. Please try again.",
+          variant: "destructive"
+        });
+      }
     } catch (error) {
       toast({
         title: "Import failed",

@@ -54,15 +54,41 @@ export const loadCurriculumDataFromSupabase = async (): Promise<CurriculumData> 
   } else if (schedules) {
     // Adicionar horários às disciplinas
     courses.forEach((course: any) => {
-      const courseSchedules = schedules.filter(
+      // Buscar o registro de horário correspondente a esta disciplina
+      const courseSchedule = schedules.find(
         (schedule: any) => schedule.disciplina_id === course.id
       );
       
-      if (courseSchedules.length > 0) {
-        course.schedules = courseSchedules.map((schedule: any) => ({
-          day: schedule.day,
-          time: schedule.time
-        }));
+      if (courseSchedule) {
+        // Converter o formato da tabela para o formato usado no front-end
+        const scheduleArray = [];
+        
+        // Verificar e adicionar cada par de dia/horário se existir
+        if (courseSchedule.day1 && courseSchedule.time1) {
+          scheduleArray.push({
+            day: courseSchedule.day1,
+            time: courseSchedule.time1
+          });
+        }
+        
+        if (courseSchedule.day2 && courseSchedule.time2) {
+          scheduleArray.push({
+            day: courseSchedule.day2,
+            time: courseSchedule.time2
+          });
+        }
+        
+        if (courseSchedule.day3 && courseSchedule.time3) {
+          scheduleArray.push({
+            day: courseSchedule.day3,
+            time: courseSchedule.time3
+          });
+        }
+        
+        // Atribuir os horários à disciplina
+        if (scheduleArray.length > 0) {
+          course.schedules = scheduleArray;
+        }
       }
     });
   }
@@ -129,31 +155,69 @@ export const saveCourseToSupabase = async (course: Course): Promise<boolean> => 
 
     // Se houver horários, salvar ou atualizar
     if (course.schedules && course.schedules.length > 0) {
-      // Primeiro remover horários existentes
+      // Primeiro verificar se já existe um registro de horário para esta disciplina
+      const { data: existingSchedule, error: checkScheduleError } = await supabase
+        .from('horarios')
+        .select('id')
+        .eq('disciplina_id', course.id)
+        .single();
+
+      // Preparar dados para inserção/atualização
+      const schedulesData: any = {
+        disciplina_id: course.id,
+        nome: course.name,
+        num_aulas: course.schedules.length,
+        updated_at: now
+      };
+
+      // Adicionar os campos de dia e hora conforme disponíveis
+      if (course.schedules[0]) {
+        schedulesData.day1 = course.schedules[0].day;
+        schedulesData.time1 = course.schedules[0].time;
+      }
+
+      if (course.schedules[1]) {
+        schedulesData.day2 = course.schedules[1].day;
+        schedulesData.time2 = course.schedules[1].time;
+      }
+
+      if (course.schedules[2]) {
+        schedulesData.day3 = course.schedules[2].day;
+        schedulesData.time3 = course.schedules[2].time;
+      }
+
+      // Se existir um registro, atualizar; senão, inserir
+      if (existingSchedule && !checkScheduleError) {
+        schedulesData.id = existingSchedule.id;
+        const { error: updateError } = await supabase
+          .from('horarios')
+          .update(schedulesData)
+          .eq('id', existingSchedule.id);
+
+        if (updateError) {
+          console.error('Erro ao atualizar horários:', updateError);
+          return false;
+        }
+      } else {
+        schedulesData.created_at = now;
+        const { error: insertError } = await supabase
+          .from('horarios')
+          .insert(schedulesData);
+
+        if (insertError) {
+          console.error('Erro ao inserir horários:', insertError);
+          return false;
+        }
+      }
+    } else {
+      // Se não tiver horários, remover registro existente
       const { error: deleteError } = await supabase
         .from('horarios')
         .delete()
         .eq('disciplina_id', course.id);
 
       if (deleteError) {
-        console.error('Erro ao remover horários antigos:', deleteError);
-        return false;
-      }
-
-      // Inserir novos horários
-      const schedulesData = course.schedules.map(schedule => ({
-        disciplina_id: course.id,
-        day: schedule.day,
-        time: schedule.time,
-        created_at: now
-      }));
-
-      const { error: scheduleError } = await supabase
-        .from('horarios')
-        .insert(schedulesData);
-
-      if (scheduleError) {
-        console.error('Erro ao salvar horários:', scheduleError);
+        console.error('Erro ao remover horários:', deleteError);
         return false;
       }
     }
@@ -317,6 +381,7 @@ export const initializeSupabaseData = async (): Promise<boolean> => {
     updated_at: now
   }));
 
+  // Inserir disciplinas
   const { error: coursesError } = await supabase
     .from('disciplinas')
     .insert(coursesData);
@@ -340,6 +405,49 @@ export const initializeSupabaseData = async (): Promise<boolean> => {
   if (prerequisitesError) {
     console.error('Erro ao inicializar pré-requisitos:', prerequisitesError);
     return false;
+  }
+  
+  // Formatar e inserir horários com a nova estrutura
+  const schedulesData = defaultCurriculumData.courses
+    .filter(course => course.schedules && course.schedules.length > 0)
+    .map(course => {
+      const scheduleData: any = {
+        disciplina_id: course.id,
+        nome: course.name,
+        num_aulas: course.schedules ? course.schedules.length : 0,
+        created_at: now
+      };
+
+      // Adicionar campos de dia e hora, se houver
+      if (course.schedules && course.schedules.length > 0) {
+        if (course.schedules[0]) {
+          scheduleData.day1 = course.schedules[0].day;
+          scheduleData.time1 = course.schedules[0].time;
+        }
+        
+        if (course.schedules[1]) {
+          scheduleData.day2 = course.schedules[1].day;
+          scheduleData.time2 = course.schedules[1].time;
+        }
+        
+        if (course.schedules[2]) {
+          scheduleData.day3 = course.schedules[2].day;
+          scheduleData.time3 = course.schedules[2].time;
+        }
+      }
+      
+      return scheduleData;
+    });
+
+  if (schedulesData.length > 0) {
+    const { error: schedulesError } = await supabase
+      .from('horarios')
+      .insert(schedulesData);
+
+    if (schedulesError) {
+      console.error('Erro ao inicializar horários:', schedulesError);
+      return false;
+    }
   }
 
   return true;
