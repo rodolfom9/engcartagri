@@ -166,10 +166,12 @@ export const saveCourseToSupabase = async (course: Course): Promise<void> => {
     // Preparar dados do horário
     const scheduleData: any = {
       disciplina_id: course.id,
-      nome: course.name,
-      num_aulas: numAulas,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      day1: null,
+      time1: null,
+      day2: null,
+      time2: null,
+      day3: null,
+      time3: null
     };
 
     // Adicionar apenas os campos de horário necessários com base no número de aulas
