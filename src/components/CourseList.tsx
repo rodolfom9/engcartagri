@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 
 interface CourseListProps {
   courses: Course[];
-  onToggleCompletion: (courseId: string) => void;
   showCheckbox?: boolean;
   onCheckboxChange?: (course: Course) => void;
   hideCompleted?: boolean;
@@ -15,7 +14,6 @@ interface CourseListProps {
 
 const CourseList: React.FC<CourseListProps> = ({ 
   courses, 
-  onToggleCompletion,
   showCheckbox = false,
   onCheckboxChange,
   hideCompleted = false,
@@ -112,18 +110,6 @@ const CourseList: React.FC<CourseListProps> = ({
                             </div>
                           </div>
                         </div>
-                        {onToggleCompletion && (
-                          <button
-                            onClick={() => onToggleCompletion(course.id)}
-                            className={`text-sm px-2 py-1 rounded ${
-                              isCourseCompleted(course.id)
-                                ? 'bg-green-100 text-green-700'
-                                : 'bg-gray-100 text-gray-700'
-                            }`}
-                          >
-                            {isCourseCompleted(course.id) ? 'Concluída' : 'Marcar como concluída'}
-                          </button>
-                        )}
                       </div>
                     </div>
                   ))}

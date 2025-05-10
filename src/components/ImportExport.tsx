@@ -5,6 +5,8 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { CurriculumData } from '@/types/curriculum';
 import { loadCurriculumData, importCurriculumToSupabase } from '@/lib/curriculumStorage';
 import { useToast } from '@/components/ui/use-toast';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 interface ImportExportProps {
   onImport: () => void;
@@ -23,17 +25,49 @@ const ImportExport: React.FC<ImportExportProps> = ({ onImport }) => {
     navigator.clipboard.writeText(jsonString)
       .then(() => {
         toast({
-          title: "Copied to clipboard",
-          description: "The curriculum data has been copied to your clipboard"
+          title: "Copiado para área de transferência",
+          description: "Os dados do currículo foram copiados para sua área de transferência"
         });
       })
       .catch(() => {
         toast({
-          title: "Copy failed",
-          description: "Please manually copy the text from the box below",
+          title: "Falha ao copiar",
+          description: "Por favor, copie manualmente o texto da caixa abaixo",
           variant: "destructive"
         });
       });
+  };
+
+  const handleExportPDF = async () => {
+    try {
+      const element = document.querySelector('.curriculum-flow');
+      if (!element) {
+        throw new Error('Elemento do fluxo curricular não encontrado');
+      }
+
+      const canvas = await html2canvas(element as HTMLElement);
+      const imgData = canvas.toDataURL('image/png');
+      
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'px',
+        format: [canvas.width, canvas.height]
+      });
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+      pdf.save('fluxo-curricular.pdf');
+
+      toast({
+        title: "PDF exportado com sucesso",
+        description: "O fluxo curricular foi salvo como PDF"
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao exportar PDF",
+        description: "Não foi possível gerar o PDF. Tente novamente.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleImport = async () => {
@@ -43,7 +77,7 @@ const ImportExport: React.FC<ImportExportProps> = ({ onImport }) => {
       // Basic validation
       if (!data.courses || !Array.isArray(data.courses) || 
           !data.prerequisites || !Array.isArray(data.prerequisites)) {
-        throw new Error("Invalid data format");
+        throw new Error("Formato de dados inválido");
       }
 
       const success = await importCurriculumToSupabase(data);
@@ -52,22 +86,22 @@ const ImportExport: React.FC<ImportExportProps> = ({ onImport }) => {
         onImport();
         
         toast({
-          title: "Import successful",
-          description: `Imported ${data.courses.length} courses and ${data.prerequisites.length} prerequisites`
+          title: "Importação bem-sucedida",
+          description: `Importadas ${data.courses.length} disciplinas e ${data.prerequisites.length} pré-requisitos`
         });
         
         setImportData('');
       } else {
         toast({
-          title: "Import to Supabase failed",
-          description: "Failed to save data to the database. Please try again.",
+          title: "Falha ao importar para o Supabase",
+          description: "Não foi possível salvar os dados no banco. Tente novamente.",
           variant: "destructive"
         });
       }
     } catch (error) {
       toast({
-        title: "Import failed",
-        description: "The data format is invalid. Please check and try again.",
+        title: "Falha na importação",
+        description: "O formato dos dados é inválido. Verifique e tente novamente.",
         variant: "destructive"
       });
     }
@@ -76,22 +110,23 @@ const ImportExport: React.FC<ImportExportProps> = ({ onImport }) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Import/Export Curriculum Data</CardTitle>
+        <CardTitle>Importar/Exportar Dados do Currículo</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex space-x-4">
-          <Button onClick={handleExport} className="flex-1">Export Data</Button>
-          <Button onClick={handleImport} disabled={!importData} className="flex-1">Import Data</Button>
+          <Button onClick={handleExport} className="flex-1">Exportar JSON</Button>
+          <Button onClick={handleExportPDF} className="flex-1">Exportar PDF</Button>
+          <Button onClick={handleImport} disabled={!importData} className="flex-1">Importar</Button>
         </div>
         <Textarea
-          placeholder="Paste curriculum data here to import, or export to see the data..."
+          placeholder="Cole os dados do currículo aqui para importar, ou exporte para ver os dados..."
           value={importData}
           onChange={e => setImportData(e.target.value)}
           className="min-h-[200px] font-mono text-sm"
         />
       </CardContent>
       <CardFooter className="text-sm text-gray-500">
-        Use this feature to backup your curriculum data or share it with others.
+        Use este recurso para fazer backup dos seus dados ou compartilhá-los com outros.
       </CardFooter>
     </Card>
   );

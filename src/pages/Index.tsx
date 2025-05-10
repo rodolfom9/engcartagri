@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
@@ -16,6 +15,7 @@ const Index = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [coursesCount, setCoursesCount] = useState(0);
   const [prerequisitesCount, setPrerequisitesCount] = useState(0);
+  const [completedCoursesCount, setCompletedCoursesCount] = useState(0);
   
   useEffect(() => {
     const fetchData = async () => {
@@ -23,11 +23,13 @@ const Index = () => {
         const data = await loadCurriculumDataAsync();
         setCoursesCount(data.courses.length);
         setPrerequisitesCount(data.prerequisites.length);
+        setCompletedCoursesCount(data.completedCourses.length);
       } catch (error) {
         console.error('Erro ao carregar dados:', error);
         const localData = loadCurriculumData();
         setCoursesCount(localData.courses.length);
         setPrerequisitesCount(localData.prerequisites.length);
+        setCompletedCoursesCount(localData.completedCourses.length);
       }
     };
     
@@ -52,7 +54,7 @@ const Index = () => {
                 </div>
               ) : (
                 <Link to="/auth">
-                  <Button size="sm">Login / Cadastro</Button>
+                  <Button size="sm">Login</Button>
                 </Link>
               )
             )}
@@ -67,7 +69,7 @@ const Index = () => {
             <CardDescription>Visão geral do currículo</CardDescription>
           </CardHeader>
           <CardContent className="p-4 pt-0">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="border rounded-lg p-4 text-center">
                 <p className="text-sm text-muted-foreground">Disciplinas</p>
                 <p className="text-3xl font-bold">{coursesCount}</p>
@@ -75,6 +77,10 @@ const Index = () => {
               <div className="border rounded-lg p-4 text-center">
                 <p className="text-sm text-muted-foreground">Pré-requisitos</p>
                 <p className="text-3xl font-bold">{prerequisitesCount}</p>
+              </div>
+              <div className="border rounded-lg p-4 text-center">
+                <p className="text-sm text-muted-foreground">Concluídas</p>
+                <p className="text-3xl font-bold">{completedCoursesCount}</p>
               </div>
             </div>
           </CardContent>

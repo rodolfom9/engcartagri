@@ -53,11 +53,6 @@ const CourseBox: React.FC<CourseBoxProps> = ({
         style={{ minHeight: '80px' }}
       >
         <div className="text-sm">{course.name}</div>
-        {course.professor && (
-          <div className="text-xs text-gray-600 mt-1">
-            Prof. {course.professor}
-          </div>
-        )}
       </div>
       
       <div className="flex justify-between items-center bg-gray-100 p-1 text-xs">
@@ -72,7 +67,7 @@ const CourseBox: React.FC<CourseBoxProps> = ({
               className={`py-0 h-5 px-1 text-[10px] ${
                 isCompleted 
                   ? 'text-green-700 hover:text-green-800 hover:bg-green-100' 
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200 animate-pulse shadow-lg'
               }`}
               onClick={(e) => {
                 e.stopPropagation();
