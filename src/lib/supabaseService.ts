@@ -85,10 +85,14 @@ export const loadCurriculumDataFromSupabase = async (): Promise<CurriculumData> 
           });
         }
         
-        // Atribuir os horários à disciplina
+        // Atribuir os horários à disciplina apenas se houver horários válidos
         if (scheduleArray.length > 0) {
           course.schedules = scheduleArray;
+        } else {
+          course.schedules = undefined;
         }
+      } else {
+        course.schedules = undefined;
       }
     });
   }

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -33,33 +32,49 @@ const ManageCurriculum: React.FC<ManageCurriculumProps> = ({ onDataChange }) => 
     loadAndSetData();
     
     // Set up realtime subscriptions for Supabase
-    const coursesSubscription = supabase
-      .channel('manage-changes-courses')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'disciplinas' },
-        (payload) => {
-          console.log('Courses change detected:', payload);
-          loadAndSetData();
-        }
-      )
-      .subscribe();
-    
-    const prerequisitesSubscription = supabase
-      .channel('manage-changes-prerequisites')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'prerequisitos' },
-        (payload) => {
-          console.log('Prerequisites change detected:', payload);
-          loadAndSetData();
-        }
-      )
-      .subscribe();
+    const subscriptions = [
+      supabase
+        .channel('manage-changes-courses')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'disciplinas' },
+          (payload) => {
+            console.log('Courses change detected:', payload);
+            loadAndSetData();
+          }
+        )
+        .subscribe(),
+      
+      supabase
+        .channel('manage-changes-prerequisites')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'prerequisitos' },
+          (payload) => {
+            console.log('Prerequisites change detected:', payload);
+            loadAndSetData();
+          }
+        )
+        .subscribe(),
+      
+      supabase
+        .channel('manage-changes-horarios')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'horarios' },
+          (payload) => {
+            console.log('Schedules change detected:', payload);
+            loadAndSetData();
+          }
+        )
+        .subscribe()
+    ];
     
     return () => {
-      supabase.removeChannel(coursesSubscription);
-      supabase.removeChannel(prerequisitesSubscription);
+      // Cleanup all subscriptions
+      subscriptions.forEach(subscription => {
+        supabase.removeChannel(subscription);
+      });
     };
   }, []);
 
