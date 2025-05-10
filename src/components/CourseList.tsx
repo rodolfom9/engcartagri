@@ -10,6 +10,7 @@ interface CourseListProps {
   showCheckbox?: boolean;
   onCheckboxChange?: (course: Course) => void;
   hideCompleted?: boolean;
+  schedule?: Record<string, Record<string, Course | null>>;
 }
 
 const CourseList: React.FC<CourseListProps> = ({ 
@@ -17,9 +18,18 @@ const CourseList: React.FC<CourseListProps> = ({
   onToggleCompletion,
   showCheckbox = false,
   onCheckboxChange,
-  hideCompleted = false
+  hideCompleted = false,
+  schedule = {}
 }) => {
   const [expandedPeriods, setExpandedPeriods] = useState<number[]>([1]);
+
+  // Função para verificar se um curso está na grade
+  const isInSchedule = (course: Course): boolean => {
+    if (!course.schedules) return false;
+    return course.schedules.some(({ day, time }) => 
+      schedule[day]?.[time]?.id === course.id
+    );
+  };
 
   // Agrupar cursos por período
   const coursesByPeriod = courses.reduce((acc, course) => {
@@ -82,39 +92,38 @@ const CourseList: React.FC<CourseListProps> = ({
                               type="checkbox"
                               className="mt-1"
                               onChange={() => onCheckboxChange(course)}
+                              checked={isInSchedule(course)}
                             />
                           )}
                           <div>
-                            <h3 className="font-semibold">{course.name}</h3>
-                            <p className="text-sm text-gray-600">
-                              {course.type} - {course.hours} - {course.credits} créditos
-                            </p>
-                            {course.professor && (
-                              <p className="text-sm text-gray-600">
-                                Professor: {course.professor}
-                              </p>
-                            )}
-                            {course.schedules && course.schedules.length > 0 && (
-                              <div className="text-sm text-gray-600 mt-1">
-                                <p>Horários:</p>
-                                <ul className="list-disc list-inside">
-                                  {course.schedules.map((schedule, index) => (
-                                    <li key={index}>
-                                      {schedule.day} às {schedule.time}
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{course.name}</span>
+                              <span className="text-xs text-gray-500">({course.id})</span>
+                              {course.schedules && course.schedules.length > 0 && (
+                                <span className="text-xs text-gray-600">
+                                  {course.schedules.map((s, i) => 
+                                    `${s.day} ${s.time}${i < course.schedules!.length - 1 ? ', ' : ''}`
+                                  )}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {course.professor && <span>Prof. {course.professor}</span>}
+                            </div>
                           </div>
                         </div>
-                        <div className="text-sm">
-                          {isCourseCompleted(course.id) ? (
-                            <span className="text-green-600 font-medium">Concluída</span>
-                          ) : (
-                            <span className="text-gray-500">Pendente</span>
-                          )}
-                        </div>
+                        {onToggleCompletion && (
+                          <button
+                            onClick={() => onToggleCompletion(course.id)}
+                            className={`text-sm px-2 py-1 rounded ${
+                              isCourseCompleted(course.id)
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-gray-100 text-gray-700'
+                            }`}
+                          >
+                            {isCourseCompleted(course.id) ? 'Concluída' : 'Marcar como concluída'}
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}

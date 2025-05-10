@@ -19,6 +19,7 @@ import { Checkbox } from './ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from './ui/use-toast';
 
 const CurriculumFlow: React.FC = () => {
   const [curriculumData, setCurriculumData] = useState<CurriculumData>({ 
@@ -175,6 +176,21 @@ const CurriculumFlow: React.FC = () => {
       return;
     }
 
+    // Verifica se há conflito de horários
+    const hasConflict = course.schedules.some(({ day, time }) => {
+      const existingCourse = schedule[day]?.[time];
+      return existingCourse !== null && existingCourse !== undefined;
+    });
+
+    if (hasConflict) {
+      toast({
+        title: "Erro",
+        description: `Não foi possível adicionar "${course.name}" pois há conflito de horário`,
+        variant: "destructive"
+      });
+      return;
+    }
+
     // Adiciona o curso em todos os seus horários
     const newSchedule = { ...schedule };
     course.schedules.forEach(({ day, time }) => {
@@ -190,7 +206,7 @@ const CurriculumFlow: React.FC = () => {
   const handleRemoveCourse = (course: Course) => {
     const newSchedule = { ...schedule };
     Object.keys(newSchedule).forEach(day => {
-      Object.keys(newSchedule[day]).forEach(time => {
+      Object.keys(newSchedule[day] || {}).forEach(time => {
         if (newSchedule[day][time]?.id === course.id) {
           newSchedule[day][time] = null;
         }
@@ -411,124 +427,18 @@ const CurriculumFlow: React.FC = () => {
                   handleRemoveCourse(course);
                 }
               }}
-              onUpdateCourseId={async (oldId: string, newId: string) => {
-                try {
-                  // Verificar se o novo ID já existe
-                  const { data: existingCourse } = await supabase
-                    .from('disciplinas')
-                    .select('id')
-                    .eq('id', newId)
-                    .single();
-
-                  if (existingCourse) {
-                    throw new Error('Já existe uma disciplina com este ID');
-                  }
-
-                  // Atualizar horários primeiro (devido à chave estrangeira)
-                  const { error: horariosError } = await supabase
-                    .from('horarios')
-                    .update({ disciplina_id: newId })
-                    .eq('disciplina_id', oldId);
-
-                  if (horariosError) throw horariosError;
-
-                  // Atualizar pré-requisitos (from)
-                  const { error: prereqFromError } = await supabase
-                    .from('prerequisitos')
-                    .update({ from_disciplina: newId })
-                    .eq('from_disciplina', oldId);
-
-                  if (prereqFromError) throw prereqFromError;
-
-                  // Atualizar pré-requisitos (to)
-                  const { error: prereqToError } = await supabase
-                    .from('prerequisitos')
-                    .update({ to_disciplina: newId })
-                    .eq('to_disciplina', oldId);
-
-                  if (prereqToError) throw prereqToError;
-
-                  // Atualizar disciplinas concluídas
-                  const { error: completedError } = await supabase
-                    .from('disciplinas_concluidas')
-                    .update({ disciplina_id: newId })
-                    .eq('disciplina_id', oldId);
-
-                  if (completedError) throw completedError;
-
-                  // Finalmente, atualizar a disciplina
-                  const { error } = await supabase
-                    .from('disciplinas')
-                    .update({ id: newId })
-                    .eq('id', oldId);
-
-                  if (error) throw error;
-
-                  // Atualizar estado local
-                  const newData = { ...curriculumData };
-                  
-                  // Atualizar courses
-                  const courseIndex = newData.courses.findIndex(c => c.id === oldId);
-                  if (courseIndex !== -1) {
-                    newData.courses[courseIndex] = {
-                      ...newData.courses[courseIndex],
-                      id: newId
-                    };
-                  }
-
-                  // Atualizar prerequisites
-                  newData.prerequisites = newData.prerequisites.map(prereq => ({
-                    from: prereq.from === oldId ? newId : prereq.from,
-                    to: prereq.to === oldId ? newId : prereq.to
-                  }));
-
-                  // Atualizar completedCourses
-                  newData.completedCourses = newData.completedCourses.map(id => 
-                    id === oldId ? newId : id
-                  );
-
-                  // Atualizar schedule
-                  const newSchedule = { ...schedule };
-                  Object.keys(newSchedule).forEach(day => {
-                    Object.keys(newSchedule[day] || {}).forEach(time => {
-                      if (newSchedule[day]?.[time]?.id === oldId) {
-                        newSchedule[day][time] = {
-                          ...newSchedule[day][time]!,
-                          id: newId
-                        };
-                      }
-                    });
-                  });
-
-                  setCurriculumData(newData);
-                  setSchedule(newSchedule);
-
-                  // Forçar recarga dos dados do Supabase
-                  const updatedData = await loadCurriculumDataAsync();
-                  setCurriculumData(updatedData);
-                } catch (error: any) {
-                  console.error('Erro ao atualizar ID:', error);
-                  throw new Error(error.message || 'Erro ao atualizar ID da disciplina');
-                }
-              }}
             />
             <CourseList 
               courses={curriculumData.courses}
               onToggleCompletion={toggleCourseCompletion}
               showCheckbox={true}
               hideCompleted={true}
+              schedule={schedule}
               onCheckboxChange={(course) => {
-                // Verifica se o curso já está em algum horário
-                let isInSchedule = false;
-                Object.keys(schedule).forEach(day => {
-                  Object.keys(schedule[day] || {}).forEach(time => {
-                    if (schedule[day]?.[time]?.id === course.id) {
-                      isInSchedule = true;
-                    }
-                  });
-                });
+                const isInSchedule = course.schedules?.some(({ day, time }) => 
+                  schedule[day]?.[time]?.id === course.id
+                );
 
-                // Se estiver na grade, remove; se não estiver, adiciona
                 if (isInSchedule) {
                   handleRemoveCourse(course);
                 } else {
@@ -554,10 +464,27 @@ const CurriculumFlow: React.FC = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-lg w-full">
             <h2 className="text-2xl font-bold mb-4">{selectedCourse.name}</h2>
             <div className="space-y-2">
+              <p><span className="font-semibold">ID:</span> {selectedCourse.id}</p>
               <p><span className="font-semibold">Período:</span> {selectedCourse.period}º</p>
               <p><span className="font-semibold">Carga Horária:</span> {selectedCourse.hours}</p>
               <p><span className="font-semibold">Créditos:</span> {selectedCourse.credits}</p>
               <p><span className="font-semibold">Tipo:</span> {selectedCourse.type}</p>
+              {selectedCourse.professor && (
+                <p><span className="font-semibold">Professor:</span> {selectedCourse.professor}</p>
+              )}
+              
+              {selectedCourse.schedules && selectedCourse.schedules.length > 0 && (
+                <div className="mt-4">
+                  <h3 className="font-semibold mb-2">Horários:</h3>
+                  <ul className="list-disc pl-5">
+                    {selectedCourse.schedules.map((schedule, index) => (
+                      <li key={index}>
+                        {schedule.day} às {schedule.time}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               
               <div className="mt-4">
                 <h3 className="font-semibold mb-2">Pré-requisitos:</h3>
