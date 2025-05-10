@@ -417,3 +417,25 @@ export const initializeSupabaseData = async (): Promise<boolean> => {
 
   return true;
 };
+
+// Testar conexão com o Supabase
+export const testSupabaseConnection = async (): Promise<boolean> => {
+  try {
+    // Tentar fazer uma consulta simples
+    const { data, error } = await supabase
+      .from('disciplinas')
+      .select('id')
+      .limit(1);
+
+    if (error) {
+      console.error('Erro ao conectar com o Supabase:', error);
+      return false;
+    }
+
+    console.log('Conexão com o Supabase estabelecida com sucesso:', data);
+    return true;
+  } catch (error) {
+    console.error('Erro ao testar conexão com o Supabase:', error);
+    return false;
+  }
+};
