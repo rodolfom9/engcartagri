@@ -42,7 +42,7 @@ const Index = () => {
     <div className="flex flex-col min-h-screen">
       <header className="border-b">
         <div className="container mx-auto p-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Gerenciador de Currículo</h1>
+          <h1 className="text-2xl font-bold">Gerenciador de Grade Curricular da Engenharia Cartográfica e de Agrimensura - IFG.</h1>
           <div>
             {!loading && (
               user ? (
@@ -83,15 +83,14 @@ const Index = () => {
         <Card className="md:col-span-2">
           <CardHeader className="p-4">
             <CardTitle className="text-lg">Informações</CardTitle>
-            <CardDescription>Sobre o gerenciador de currículo</CardDescription>
+            <CardDescription>Sobre o gerenciador</CardDescription>
           </CardHeader>
           <CardContent className="p-4 pt-0">
             <p>
-              Este gerenciador permite visualizar o fluxo do curso, marcar disciplinas como concluídas, 
-              visualizar pré-requisitos e gerenciar sua grade de horários.
+              Este gerenciador permite gerenciar sua grade de horários.
             </p>
             <p className="mt-2">
-              Na aba "Gerenciar Dados" você pode adicionar, editar ou remover disciplinas e pré-requisitos.
+              Login só e usado pelo admin. Caso Encontre algum problema, entre em contato com o desenvolvedor.
               {!user && (
                 <span className="text-amber-600 ml-1">
                   Login necessário para editar dados.
@@ -105,7 +104,7 @@ const Index = () => {
       <Tabs defaultValue="view" className="flex-1 flex flex-col">
         <div className="container mx-auto px-2">
           <TabsList className="grid grid-cols-3 mb-0">
-            <TabsTrigger value="view">View Curriculum</TabsTrigger>
+            <TabsTrigger value="view">Visualizar Grade</TabsTrigger>
             <TabsTrigger value="manage" disabled={!user}>Manage Data</TabsTrigger>
             <TabsTrigger value="import-export">Import/Export</TabsTrigger>
           </TabsList>
