@@ -162,13 +162,35 @@ export const saveCourseToSupabase = async (course: Course): Promise<boolean> => 
     console.log('Disciplina existente:', existingCourse);
 
     if (existingCourse) {
-      // Se existir, atualizar
+      // Se existir e user_id for null, primeiro atualizamos o user_id
+      if (!existingCourse.user_id) {
+        console.log('Atualizando user_id da disciplina...');
+        const { error: userIdUpdateError } = await supabase
+          .from('disciplinas')
+          .update({ user_id: userData.session.user.id })
+          .eq('id', course.id);
+
+        if (userIdUpdateError) {
+          console.error('Erro ao atualizar user_id:', userIdUpdateError);
+          return false;
+        }
+      }
+
+      // Agora atualizamos os outros dados
       console.log('Atualizando disciplina existente...');
       const { data: updateData, error: updateError } = await supabase
         .from('disciplinas')
-        .update(courseData)
+        .update({
+          name: courseData.name,
+          period: courseData.period,
+          row: courseData.row,
+          hours: courseData.hours,
+          type: courseData.type,
+          credits: courseData.credits,
+          professor: courseData.professor,
+          updated_at: courseData.updated_at
+        })
         .eq('id', course.id)
-        .eq('user_id', userData.session.user.id)
         .select();
 
       console.log('Resultado da atualização:', { data: updateData, error: updateError });
