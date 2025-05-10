@@ -2,7 +2,6 @@ import { CurriculumData, Course, Prerequisite } from '../types/curriculum';
 import { defaultCurriculumData } from '../data/courses';
 import { supabase } from '../integrations/supabase/client';
 import { saveCourseToSupabase } from './supabaseService';
-import { deleteCourseFromSupabase } from './supabaseService';
 
 const STORAGE_KEY = 'curriculum_data';
 
@@ -137,24 +136,9 @@ export const loadCurriculumDataAsync = async (): Promise<CurriculumData> => {
 
     // Map the data to match our application's structure
     const mappedCourses = courses.map(course => {
-      // Encontrar horário correspondente na nova estrutura da tabela
-      const courseSchedule = schedules.find(s => s.disciplina_id === course.id);
-      let courseSchedules = [];
-      
-      if (courseSchedule) {
-        // Adicionar cada par de dia/horário se existir
-        if (courseSchedule.day1 && courseSchedule.time1) {
-          courseSchedules.push({ day: courseSchedule.day1, time: courseSchedule.time1 });
-        }
-        
-        if (courseSchedule.day2 && courseSchedule.time2) {
-          courseSchedules.push({ day: courseSchedule.day2, time: courseSchedule.time2 });
-        }
-        
-        if (courseSchedule.day3 && courseSchedule.time3) {
-          courseSchedules.push({ day: courseSchedule.day3, time: courseSchedule.time3 });
-        }
-      }
+      const courseSchedules = schedules
+        .filter(s => s.disciplina_id === course.id)
+        .map(s => ({ day: s.day, time: s.time }));
 
       return {
         id: course.id,
@@ -265,9 +249,18 @@ export const deleteCourse = async (courseId: string): Promise<CurriculumData> =>
   saveCurriculumData(data);
   
   try {
-    // Usar a função específica para deletar do Supabase
-    await deleteCourseFromSupabase(courseId);
-    console.log('Disciplina removida do Supabase com sucesso:', courseId);
+    const { data: userData } = await supabase.auth.getSession();
+    
+    // Delete from Supabase if user is authenticated
+    if (userData?.session?.user) {
+      // Supabase will handle cascade deleting related records due to ON DELETE CASCADE
+      const { error } = await supabase
+        .from('disciplinas')
+        .delete()
+        .eq('id', courseId);
+      
+      if (error) throw error;
+    }
   } catch (error) {
     console.error('Error deleting course from Supabase:', error);
   }
@@ -431,14 +424,10 @@ export const importCurriculumToSupabase = async (data: CurriculumData): Promise<
       created_at: new Date().toISOString()
     }));
     
-    // Delete existing prerequisites
-    // Use each course ID individually instead of passing an array
-    for (const course of coursesForInsert) {
-      await supabase
-        .from('prerequisitos')
-        .delete()
-        .eq('from_disciplina', course.id);
-    }
+    await supabase
+      .from('prerequisitos')
+      .delete()
+      .eq('from_disciplina', coursesForInsert.map(c => c.id));
       
     if (prerequisitesForInsert.length > 0) {
       const { error: prerequisitesError } = await supabase

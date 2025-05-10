@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,17 +17,19 @@ interface CourseFormProps {
 
 const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel }) => {
   const { toast } = useToast();
-  const [course, setCourse] = useState<Course>({
-    id: initialCourse?.id || '',
-    name: initialCourse?.name || '',
-    period: initialCourse?.period || 1,
-    row: initialCourse?.row || 1,
-    hours: initialCourse?.hours || '27',
-    type: initialCourse?.type || 'NB',
-    credits: initialCourse?.credits || 2,
-    professor: initialCourse?.professor || '',
-    schedules: initialCourse?.schedules || []
-  });
+  const [course, setCourse] = useState<Course>(
+    initialCourse || {
+      id: '',
+      name: '',
+      period: 1,
+      row: 1,
+      hours: '',
+      type: 'NB' as CourseType,
+      credits: 0,
+      professor: '',
+      schedules: []
+    }
+  );
 
   const [scheduleCount, setScheduleCount] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -130,7 +133,6 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
     const newErrors: Record<string, string> = {};
     
     // Required fields validation
-    if (!course.id) newErrors.id = "O código da disciplina é obrigatório";
     if (!course.name) newErrors.name = "O nome da disciplina é obrigatório";
     if (!course.hours) newErrors.hours = "A carga horária é obrigatória";
     
@@ -146,7 +148,6 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
         const schedule = schedules[i];
         if (!schedule || !schedule.day || !schedule.time) {
           newErrors[`schedule-${i}`] = "Horário incompleto";
-          console.error(`Horário ${i+1} incompleto:`, schedule);
         }
       }
     }
@@ -183,30 +184,16 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
       // Ensure the schedules array is properly set up based on scheduleCount
       const updatedCourse = { ...course };
       
-      console.log('Horários antes da validação:', updatedCourse.schedules);
-      console.log('Número de horários esperado:', scheduleCount);
-      
-      // Trim schedules array to match the scheduleCount and ensure all schedules are valid
+      // Trim schedules array to match the scheduleCount
       if (updatedCourse.schedules && scheduleCount > 0) {
-        updatedCourse.schedules = updatedCourse.schedules
-          .slice(0, scheduleCount)
-          .map(schedule => ({
-            day: schedule.day || '',
-            time: schedule.time || ''
-          }))
-          .filter(schedule => schedule.day && schedule.time); // Remove invalid schedules
+        updatedCourse.schedules = updatedCourse.schedules.slice(0, scheduleCount);
       }
       
-      console.log('Horários após validação:', updatedCourse.schedules);
+      console.log('Submitting course with schedules:', updatedCourse);
       
-      // Generate ID for new courses only if not provided
-      if (!isEditing && !updatedCourse.id) {
-        updatedCourse.id = generateCourseId(updatedCourse.name);
-      }
-      
-      console.log('Salvando disciplina:', updatedCourse);
-      
+      // Generate ID for new courses
       if (!isEditing) {
+        updatedCourse.id = generateCourseId(updatedCourse.name);
         await addCourse(updatedCourse);
         toast({
           title: "Sucesso",
@@ -222,7 +209,6 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
 
       onSave(updatedCourse);
     } catch (error: any) {
-      console.error('Erro ao salvar disciplina:', error);
       toast({
         title: "Erro",
         description: error.message || "Falha ao salvar a disciplina",
@@ -233,44 +219,34 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="id">Código da Disciplina</Label>
-          <Input
-            id="id"
-            value={course.id}
-            onChange={(e) => setCourse({ ...course, id: e.target.value })}
-            placeholder="Ex: MAT001"
-            required
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="name">Nome da Disciplina</Label>
-          <Input
-            id="name"
-            value={course.name}
-            onChange={(e) => setCourse({ ...course, name: e.target.value })}
-            placeholder="Ex: Cálculo I"
-            required
-          />
-        </div>
-      </div>
       <div className="space-y-2">
-        <Label htmlFor="period">Período</Label>
+        <Label htmlFor="name">Nome da Disciplina</Label>
         <Input 
-          id="period" 
-          name="period" 
-          type="number" 
-          min={1}
-          max={12}
-          value={course.period} 
-          onChange={handleNumberChange}
-          className={errors.period ? "border-red-500" : ""}
+          id="name" 
+          name="name" 
+          value={course.name} 
+          onChange={handleChange}
+          placeholder="Digite o nome da disciplina" 
+          className={errors.name ? "border-red-500" : ""}
         />
-        {errors.period && <p className="text-xs text-red-500">{errors.period}</p>}
+        {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
       </div>
 
       <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="period">Período</Label>
+          <Input 
+            id="period" 
+            name="period" 
+            type="number" 
+            min={1}
+            max={12}
+            value={course.period} 
+            onChange={handleNumberChange}
+            className={errors.period ? "border-red-500" : ""}
+          />
+          {errors.period && <p className="text-xs text-red-500">{errors.period}</p>}
+        </div>
         <div className="space-y-2">
           <Label htmlFor="row">Linha</Label>
           <Input 
@@ -284,18 +260,6 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
             className={errors.row ? "border-red-500" : ""}
           />
           {errors.row && <p className="text-xs text-red-500">{errors.row}</p>}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="credits">Créditos</Label>
-          <Input 
-            id="credits" 
-            name="credits" 
-            type="number" 
-            value={course.credits} 
-            onChange={handleNumberChange}
-            className={errors.credits ? "border-red-500" : ""}
-          />
-          {errors.credits && <p className="text-xs text-red-500">{errors.credits}</p>}
         </div>
       </div>
 
