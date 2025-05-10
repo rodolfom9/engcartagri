@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Depurador de Exclusão de Disciplinas</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 10px 5px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button.delete {
+            background-color: #f44336;
+        }
+        button.debug {
+            background-color: #2196F3;
+        }
+        .panel {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        #disciplineList {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        .discipline-card {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            background-color: #fff;
+        }
+        .discipline-card h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .logs {
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 3px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .success {
+            color: #4CAF50;
+        }
+        .error {
+            color: #f44336;
+        }
+        .info {
+            color: #2196F3;
+        }
+        .warning {
+            color: #ff9800;
+        }
+        .login-form {
+            margin-bottom: 20px;
+        }
+        .login-form input {
+            padding: 8px;
+            margin-right: 10px;
+            width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Depurador de Exclusão de Disciplinas</h1>
+        
+        <div class="panel" id="auth-panel">
+            <h2>Autenticação</h2>
+            <div id="auth-status">Verificando status de autenticação...</div>
+            
+            <div class="login-form" id="login-form">
+                <input type="email" id="email" placeholder="Email">
+                <input type="password" id="password" placeholder="Senha">
+                <button id="login-btn">Entrar</button>
+            </div>
+        </div>
+        
+        <div class="panel">
+            <h2>Disciplinas</h2>
+            <button id="loadDisciplines">Carregar Disciplinas</button>
+            <div id="disciplineList"></div>
+        </div>
+        
+        <div class="panel">
+            <h2>Logs</h2>
+            <button id="clearLogs">Limpar Logs</button>
+            <div id="logs" class="logs"></div>
+        </div>
+    </div>
+
+    <script>
+        // Inicializar Supabase client
+        const SUPABASE_URL = "https://vcqmpvfgepruwgxzfjzu.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjcW1wdmZnZXBydXdneHpmanp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY3NTc5MDgsImV4cCI6MjA2MjMzMzkwOH0.avZUr0--1hm-jrvApfy5LDsZhUgjGIpYaiSEGhuir-g";
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // Elementos DOM
+        const authStatusDiv = document.getElementById('auth-status');
+        const loginForm = document.getElementById('login-form');
+        const disciplineListDiv = document.getElementById('disciplineList');
+        const logsDiv = document.getElementById('logs');
+        
+        // Log function para mostrar mensagens de debug
+        function log(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logsDiv.appendChild(entry);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+        
+        // Limpar logs
+        document.getElementById('clearLogs').addEventListener('click', () => {
+            logsDiv.innerHTML = '';
+        });
+        
+        // Verificar autenticação
+        async function checkAuth() {
+            try {
+                const { data, error } = await supabase.auth.getSession();
+                
+                if (error) {
+                    authStatusDiv.innerHTML = `<p class="error">Erro ao verificar autenticação: ${error.message}</p>`;
+                    log(`Erro ao verificar autenticação: ${error.message}`, 'error');
+                    return null;
+                }
+                
+                if (data.session && data.session.user) {
+                    authStatusDiv.innerHTML = `
+                        <p class="success">
+                            <strong>Autenticado como:</strong> ${data.session.user.email}<br>
+                            <strong>ID:</strong> ${data.session.user.id}<br>
+                            <button id="logout-btn">Sair</button>
+                        </p>
+                    `;
+                    document.getElementById('logout-btn').addEventListener('click', logout);
+                    loginForm.style.display = 'none';
+                    log(`Autenticado como: ${data.session.user.email}`, 'success');
+                    return data.session.user;
+                } else {
+                    authStatusDiv.innerHTML = `<p class="warning">Não autenticado. Faça login para testar exclusões.</p>`;
+                    loginForm.style.display = 'block';
+                    log('Não autenticado', 'warning');
+                    return null;
+                }
+            } catch (err) {
+                authStatusDiv.innerHTML = `<p class="error">Erro: ${err.message}</p>`;
+                log(`Erro: ${err.message}`, 'error');
+                return null;
+            }
+        }
+        
+        // Logout
+        async function logout() {
+            try {
+                const { error } = await supabase.auth.signOut();
+                if (error) {
+                    log(`Erro ao fazer logout: ${error.message}`, 'error');
+                    return;
+                }
+                
+                log('Logout realizado com sucesso', 'success');
+                checkAuth();
+            } catch (err) {
+                log(`Erro ao fazer logout: ${err.message}`, 'error');
+            }
+        }
+        
+        // Login
+        document.getElementById('login-btn').addEventListener('click', async () => {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (!email || !password) {
+                log('Email e senha são obrigatórios', 'error');
+                return;
+            }
+            
+            try {
+                log(`Tentando login com email: ${email}...`);
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
+                
+                if (error) {
+                    log(`Erro de login: ${error.message}`, 'error');
+                    return;
+                }
+                
+                log('Login realizado com sucesso', 'success');
+                checkAuth();
+            } catch (err) {
+                log(`Erro: ${err.message}`, 'error');
+            }
+        });
+        
+        // Carregar disciplinas
+        document.getElementById('loadDisciplines').addEventListener('click', loadDisciplines);
+        
+        async function loadDisciplines() {
+            disciplineListDiv.innerHTML = '<p>Carregando disciplinas...</p>';
+            log('Carregando disciplinas...');
+            
+            try {
+                const { data, error } = await supabase
+                    .from('disciplinas')
+                    .select('*')
+                    .order('period', { ascending: true })
+                    .order('row', { ascending: true });
+                
+                if (error) {
+                    disciplineListDiv.innerHTML = `<p class="error">Erro ao carregar disciplinas: ${error.message}</p>`;
+                    log(`Erro ao carregar disciplinas: ${error.message}`, 'error');
+                    return;
+                }
+                
+                if (!data || data.length === 0) {
+                    disciplineListDiv.innerHTML = '<p>Nenhuma disciplina encontrada.</p>';
+                    log('Nenhuma disciplina encontrada', 'warning');
+                    return;
+                }
+                
+                log(`${data.length} disciplinas carregadas com sucesso`, 'success');
+                
+                // Renderizar cards de disciplinas
+                disciplineListDiv.innerHTML = '';
+                data.forEach(discipline => {
+                    const card = document.createElement('div');
+                    card.className = 'discipline-card';
+                    card.innerHTML = `
+                        <h3>${discipline.name}</h3>
+                        <p>ID: ${discipline.id}</p>
+                        <p>Período: ${discipline.period} | Linha: ${discipline.row}</p>
+                        <p>Tipo: ${discipline.type} | Créditos: ${discipline.credits}</p>
+                        <p>User ID: ${discipline.user_id || 'N/A'}</p>
+                        <div>
+                            <button class="delete" data-id="${discipline.id}">Excluir</button>
+                            <button class="debug" data-id="${discipline.id}">Depurar Exclusão</button>
+                        </div>
+                    `;
+                    disciplineListDiv.appendChild(card);
+                });
+                
+                // Adicionar event listeners
+                document.querySelectorAll('button.delete').forEach(btn => {
+                    btn.addEventListener('click', (e) => deleteDiscipline(e.target.dataset.id));
+                });
+                
+                document.querySelectorAll('button.debug').forEach(btn => {
+                    btn.addEventListener('click', (e) => debugDiscipline(e.target.dataset.id));
+                });
+            } catch (err) {
+                disciplineListDiv.innerHTML = `<p class="error">Erro: ${err.message}</p>`;
+                log(`Erro: ${err.message}`, 'error');
+            }
+        }
+        
+        // Excluir disciplina
+        async function deleteDiscipline(id) {
+            if (!confirm(`Tem certeza que deseja excluir a disciplina ${id}?`)) {
+                return;
+            }
+            
+            log(`Tentando excluir disciplina ${id}...`);
+            
+            try {
+                // Verificar autenticação
+                const user = await checkAuth();
+                if (!user) {
+                    log('Você precisa estar autenticado para excluir disciplinas', 'error');
+                    return;
+                }
+                
+                // Processo correto de exclusão - em ordem:
+                
+                // 1. Excluir disciplinas concluídas
+                log(`1. Excluindo registros de disciplinas_concluidas para disciplina ${id}...`);
+                const { error: completedError } = await supabase
+                    .from('disciplinas_concluidas')
+                    .delete()
+                    .eq('disciplina_id', id);
+                
+                if (completedError) {
+                    log(`Erro ao excluir disciplinas concluídas: ${completedError.message}`, 'error');
+                    return;
+                }
+                log('✓ Registros de disciplinas_concluidas excluídos com sucesso', 'success');
+                
+                // 2. Excluir pré-requisitos onde a disciplina é "from"
+                log(`2. Excluindo registros de prerequisitos onde from_disciplina = ${id}...`);
+                const { error: preReqFromError } = await supabase
+                    .from('prerequisitos')
+                    .delete()
+                    .eq('from_disciplina', id);
+                
+                if (preReqFromError) {
+                    log(`Erro ao excluir pré-requisitos (from): ${preReqFromError.message}`, 'error');
+                    return;
+                }
+                log('✓ Registros de prerequisitos (from) excluídos com sucesso', 'success');
+                
+                // 3. Excluir pré-requisitos onde a disciplina é "to"
+                log(`3. Excluindo registros de prerequisitos onde to_disciplina = ${id}...`);
+                const { error: preReqToError } = await supabase
+                    .from('prerequisitos')
+                    .delete()
+                    .eq('to_disciplina', id);
+                
+                if (preReqToError) {
+                    log(`Erro ao excluir pré-requisitos (to): ${preReqToError.message}`, 'error');
+                    return;
+                }
+                log('✓ Registros de prerequisitos (to) excluídos com sucesso', 'success');
+                
+                // 4. Excluir horários
+                log(`4. Excluindo registros de horarios para disciplina ${id}...`);
+                const { error: horariosError } = await supabase
+                    .from('horarios')
+                    .delete()
+                    .eq('disciplina_id', id);
+                
+                if (horariosError) {
+                    log(`Erro ao excluir horários: ${horariosError.message}`, 'error');
+                    return;
+                }
+                log('✓ Registros de horarios excluídos com sucesso', 'success');
+                
+                // 5. Finalmente, excluir a disciplina
+                log(`5. Excluindo disciplina ${id}...`);
+                const { error: disciplineError } = await supabase
+                    .from('disciplinas')
+                    .delete()
+                    .eq('id', id);
+                
+                if (disciplineError) {
+                    log(`Erro ao excluir disciplina: ${disciplineError.message}`, 'error');
+                    return;
+                }
+                
+                log(`Disciplina ${id} excluída com sucesso!`, 'success');
+                
+                // Recarregar lista
+                loadDisciplines();
+            } catch (err) {
+                log(`Erro ao excluir disciplina: ${err.message}`, 'error');
+            }
+        }
+        
+        // Depurar disciplina (verificar dependências)
+        async function debugDiscipline(id) {
+            log(`Iniciando depuração para disciplina ${id}...`);
+            
+            try {
+                // Verificar disciplinas_concluidas
+                log(`Verificando registros em disciplinas_concluidas para ${id}...`);
+                const { data: completedData, error: completedError } = await supabase
+                    .from('disciplinas_concluidas')
+                    .select('id, user_id')
+                    .eq('disciplina_id', id);
+                
+                if (completedError) {
+                    log(`Erro ao verificar disciplinas_concluidas: ${completedError.message}`, 'error');
+                } else if (completedData && completedData.length > 0) {
+                    log(`Encontrados ${completedData.length} registros em disciplinas_concluidas`, 'info');
+                    completedData.forEach(item => {
+                        log(`- ID: ${item.id}, User ID: ${item.user_id}`, 'info');
+                    });
+                } else {
+                    log('✓ Nenhum registro em disciplinas_concluidas', 'success');
+                }
+                
+                // Verificar prerequisitos (from)
+                log(`Verificando registros em prerequisitos onde from_disciplina = ${id}...`);
+                const { data: preReqFromData, error: preReqFromError } = await supabase
+                    .from('prerequisitos')
+                    .select('id, to_disciplina')
+                    .eq('from_disciplina', id);
+                
+                if (preReqFromError) {
+                    log(`Erro ao verificar prerequisitos (from): ${preReqFromError.message}`, 'error');
+                } else if (preReqFromData && preReqFromData.length > 0) {
+                    log(`Encontrados ${preReqFromData.length} registros em prerequisitos (from)`, 'info');
+                    preReqFromData.forEach(item => {
+                        log(`- ID: ${item.id}, To: ${item.to_disciplina}`, 'info');
+                    });
+                } else {
+                    log('✓ Nenhum registro em prerequisitos (from)', 'success');
+                }
+                
+                // Verificar prerequisitos (to)
+                log(`Verificando registros em prerequisitos onde to_disciplina = ${id}...`);
+                const { data: preReqToData, error: preReqToError } = await supabase
+                    .from('prerequisitos')
+                    .select('id, from_disciplina')
+                    .eq('to_disciplina', id);
+                
+                if (preReqToError) {
+                    log(`Erro ao verificar prerequisitos (to): ${preReqToError.message}`, 'error');
+                } else if (preReqToData && preReqToData.length > 0) {
+                    log(`Encontrados ${preReqToData.length} registros em prerequisitos (to)`, 'info');
+                    preReqToData.forEach(item => {
+                        log(`- ID: ${item.id}, From: ${item.from_disciplina}`, 'info');
+                    });
+                } else {
+                    log('✓ Nenhum registro em prerequisitos (to)', 'success');
+                }
+                
+                // Verificar horarios
+                log(`Verificando registros em horarios para ${id}...`);
+                const { data: horariosData, error: horariosError } = await supabase
+                    .from('horarios')
+                    .select('id, nome')
+                    .eq('disciplina_id', id);
+                
+                if (horariosError) {
+                    log(`Erro ao verificar horarios: ${horariosError.message}`, 'error');
+                } else if (horariosData && horariosData.length > 0) {
+                    log(`Encontrados ${horariosData.length} registros em horarios`, 'info');
+                    horariosData.forEach(item => {
+                        log(`- ID: ${item.id}, Nome: ${item.nome}`, 'info');
+                    });
+                } else {
+                    log('✓ Nenhum registro em horarios', 'success');
+                }
+                
+                log('Depuração concluída!', 'success');
+            } catch (err) {
+                log(`Erro durante depuração: ${err.message}`, 'error');
+            }
+        }
+        
+        // Verificar autenticação ao carregar
+        checkAuth();
+    </script>
+</body>
+</html> 

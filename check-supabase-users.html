@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificar Usuários do Supabase</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #333;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 10px 0;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .login-form {
+            margin-top: 20px;
+        }
+        .login-form input {
+            width: 100%;
+            padding: 8px;
+            margin: 8px 0;
+            box-sizing: border-box;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            min-height: 100px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Verificador de Usuários do Supabase</h1>
+        
+        <div>
+            <h2>Verificar usuário atual</h2>
+            <button id="checkAuth">Verificar autenticação</button>
+            <button id="checkUsers">Listar IDs de usuários</button>
+            <div id="result"></div>
+        </div>
+
+        <div class="login-form">
+            <h2>Fazer login</h2>
+            <div>
+                <input type="email" id="email" placeholder="Email">
+                <input type="password" id="password" placeholder="Senha">
+                <button id="login">Entrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Inicializar Supabase client
+        const SUPABASE_URL = "https://vcqmpvfgepruwgxzfjzu.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjcW1wdmZnZXBydXdneHpmanp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY3NTc5MDgsImV4cCI6MjA2MjMzMzkwOH0.avZUr0--1hm-jrvApfy5LDsZhUgjGIpYaiSEGhuir-g";
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // Elementos DOM
+        const resultDiv = document.getElementById('result');
+        
+        // Verificar autenticação atual
+        document.getElementById('checkAuth').addEventListener('click', async () => {
+            resultDiv.innerHTML = 'Verificando...';
+            
+            try {
+                const { data, error } = await supabase.auth.getSession();
+                
+                if (error) {
+                    resultDiv.innerHTML = `<p style="color: red">Erro: ${error.message}</p>`;
+                    return;
+                }
+                
+                if (data.session && data.session.user) {
+                    resultDiv.innerHTML = `
+                        <p><strong>Usuário autenticado:</strong></p>
+                        <p>ID: ${data.session.user.id}</p>
+                        <p>Email: ${data.session.user.email}</p>
+                        <p>Criado em: ${new Date(data.session.user.created_at).toLocaleString()}</p>
+                    `;
+                } else {
+                    resultDiv.innerHTML = '<p>Nenhum usuário autenticado no momento.</p>';
+                }
+            } catch (err) {
+                resultDiv.innerHTML = `<p style="color: red">Erro: ${err.message}</p>`;
+            }
+        });
+        
+        // Verificar IDs de usuários nas disciplinas
+        document.getElementById('checkUsers').addEventListener('click', async () => {
+            resultDiv.innerHTML = 'Buscando disciplinas...';
+            
+            try {
+                const { data, error } = await supabase
+                    .from('disciplinas')
+                    .select('user_id')
+                    .limit(20);
+                
+                if (error) {
+                    resultDiv.innerHTML = `<p style="color: red">Erro: ${error.message}</p>`;
+                    return;
+                }
+                
+                if (data && data.length > 0) {
+                    // Coletar IDs de usuários únicos
+                    const userIds = [...new Set(data.map(d => d.user_id).filter(id => id))];
+                    
+                    if (userIds.length > 0) {
+                        resultDiv.innerHTML = `
+                            <p><strong>IDs de usuários encontrados nas disciplinas:</strong></p>
+                            <ul>
+                                ${userIds.map(id => `<li>${id}</li>`).join('')}
+                            </ul>
+                        `;
+                    } else {
+                        resultDiv.innerHTML = '<p>Nenhum ID de usuário encontrado nas disciplinas.</p>';
+                    }
+                } else {
+                    resultDiv.innerHTML = '<p>Nenhuma disciplina encontrada.</p>';
+                }
+            } catch (err) {
+                resultDiv.innerHTML = `<p style="color: red">Erro: ${err.message}</p>`;
+            }
+        });
+        
+        // Login de usuário
+        document.getElementById('login').addEventListener('click', async () => {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (!email || !password) {
+                resultDiv.innerHTML = '<p style="color: red">Preencha email e senha.</p>';
+                return;
+            }
+            
+            resultDiv.innerHTML = 'Fazendo login...';
+            
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
+                
+                if (error) {
+                    resultDiv.innerHTML = `<p style="color: red">Erro de login: ${error.message}</p>`;
+                    return;
+                }
+                
+                if (data.user) {
+                    resultDiv.innerHTML = `
+                        <p style="color: green"><strong>Login bem-sucedido!</strong></p>
+                        <p>ID: ${data.user.id}</p>
+                        <p>Email: ${data.user.email}</p>
+                    `;
+                }
+            } catch (err) {
+                resultDiv.innerHTML = `<p style="color: red">Erro: ${err.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html> 
