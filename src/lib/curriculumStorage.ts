@@ -130,7 +130,7 @@ export const loadCurriculumDataAsync = async (): Promise<CurriculumData> => {
         period: course.period,
         row: course.row,
         hours: course.hours,
-        type: course.type,
+        type: course.type as "NB" | "NP" | "NE" | "NA", // Cast to CourseType
         credits: course.credits,
         professor: course.professor,
         schedules: courseSchedules.length > 0 ? courseSchedules : undefined
@@ -146,7 +146,7 @@ export const loadCurriculumDataAsync = async (): Promise<CurriculumData> => {
 
     // Store the data in localStorage for offline access
     const data = {
-      courses: mappedCourses,
+      courses: mappedCourses as Course[],
       prerequisites: mappedPrerequisites,
       completedCourses: mappedCompletedCourses
     };
@@ -188,10 +188,10 @@ export const addCourse = async (course: Course): Promise<CurriculumData> => {
   saveCurriculumData(data);
   
   try {
-    const { user } = await supabase.auth.getUser();
+    const { data: userData } = await supabase.auth.getSession();
     
     // Save to Supabase if user is authenticated
-    if (user) {
+    if (userData?.session?.user) {
       const { error } = await supabase
         .from('disciplinas')
         .insert({
@@ -203,7 +203,7 @@ export const addCourse = async (course: Course): Promise<CurriculumData> => {
           type: course.type,
           credits: course.credits,
           professor: course.professor || null,
-          user_id: user.id
+          user_id: userData.session.user.id
         });
       
       if (error) throw error;
@@ -240,10 +240,10 @@ export const updateCourse = async (courseId: string, updatedCourse: Course): Pro
     saveCurriculumData(data);
     
     try {
-      const { user } = await supabase.auth.getUser();
+      const { data: userData } = await supabase.auth.getSession();
       
       // Update in Supabase if user is authenticated
-      if (user) {
+      if (userData?.session?.user) {
         const { error } = await supabase
           .from('disciplinas')
           .update({
@@ -301,10 +301,10 @@ export const deleteCourse = async (courseId: string): Promise<CurriculumData> =>
   saveCurriculumData(data);
   
   try {
-    const { user } = await supabase.auth.getUser();
+    const { data: userData } = await supabase.auth.getSession();
     
     // Delete from Supabase if user is authenticated
-    if (user) {
+    if (userData?.session?.user) {
       // Supabase will handle cascade deleting related records due to ON DELETE CASCADE
       const { error } = await supabase
         .from('disciplinas')
@@ -334,10 +334,10 @@ export const addPrerequisite = async (from: string, to: string): Promise<Curricu
     saveCurriculumData(data);
     
     try {
-      const { user } = await supabase.auth.getUser();
+      const { data: userData } = await supabase.auth.getSession();
       
       // Add to Supabase if user is authenticated
-      if (user) {
+      if (userData?.session?.user) {
         const { error } = await supabase
           .from('prerequisitos')
           .insert({
@@ -366,10 +366,10 @@ export const removePrerequisite = async (from: string, to: string): Promise<Curr
   saveCurriculumData(data);
   
   try {
-    const { user } = await supabase.auth.getUser();
+    const { data: userData } = await supabase.auth.getSession();
     
     // Remove from Supabase if user is authenticated
-    if (user) {
+    if (userData?.session?.user) {
       const { error } = await supabase
         .from('prerequisitos')
         .delete()
@@ -393,15 +393,15 @@ export const markCourseCompleted = async (courseId: string): Promise<void> => {
     saveCurriculumData(data);
     
     try {
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: userData } = await supabase.auth.getSession();
       
       // Mark as completed in Supabase if user is authenticated
-      if (userData?.user) {
+      if (userData?.session?.user) {
         const { error } = await supabase
           .from('disciplinas_concluidas')
           .insert({
             disciplina_id: courseId,
-            user_id: userData.user.id
+            user_id: userData.session.user.id
           });
         
         if (error) throw error;
@@ -419,15 +419,15 @@ export const unmarkCourseCompleted = async (courseId: string): Promise<void> => 
   saveCurriculumData(data);
   
   try {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await supabase.auth.getSession();
     
     // Unmark as completed in Supabase if user is authenticated
-    if (userData?.user) {
+    if (userData?.session?.user) {
       const { error } = await supabase
         .from('disciplinas_concluidas')
         .delete()
         .eq('disciplina_id', courseId)
-        .eq('user_id', userData.user.id);
+        .eq('user_id', userData.session.user.id);
       
       if (error) throw error;
     }
@@ -441,10 +441,10 @@ export const importCurriculumData = async (data: CurriculumData): Promise<Curric
   saveCurriculumData(data);
   
   try {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await supabase.auth.getSession();
     
     // Import to Supabase if user is authenticated
-    if (userData?.user) {
+    if (userData?.session?.user) {
       // Format courses for Supabase
       const courses = data.courses.map(course => ({
         id: course.id,
@@ -455,14 +455,14 @@ export const importCurriculumData = async (data: CurriculumData): Promise<Curric
         type: course.type,
         credits: course.credits,
         professor: course.professor || null,
-        user_id: userData.user.id
+        user_id: userData.session.user.id
       }));
       
       // Clear existing data first (if user has permission)
       await supabase
         .from('disciplinas')
         .delete()
-        .filter('user_id', 'eq', userData.user.id);
+        .filter('user_id', 'eq', userData.session.user.id);
       
       // Insert new courses
       const { error: coursesError } = await supabase
@@ -510,7 +510,7 @@ export const importCurriculumData = async (data: CurriculumData): Promise<Curric
       // Mark completed courses
       const completedCourses = data.completedCourses.map(courseId => ({
         disciplina_id: courseId,
-        user_id: userData.user.id
+        user_id: userData.session.user.id
       }));
       
       if (completedCourses.length > 0) {

@@ -1,3 +1,4 @@
+
 import { supabase } from '../integrations/supabase/client';
 import { Course, Prerequisite, CurriculumData } from '../types/curriculum';
 import { defaultCurriculumData } from '../data/courses';
@@ -6,7 +7,7 @@ import { defaultCurriculumData } from '../data/courses';
 export const loadCurriculumDataFromSupabase = async (): Promise<CurriculumData> => {
   // Carregar disciplinas
   const { data: courses, error: coursesError } = await supabase
-    .from('courses')
+    .from('disciplinas')
     .select('*');
 
   if (coursesError) {
@@ -16,7 +17,7 @@ export const loadCurriculumDataFromSupabase = async (): Promise<CurriculumData> 
 
   // Carregar pré-requisitos
   const { data: prerequisites, error: prerequisitesError } = await supabase
-    .from('prerequisites')
+    .from('prerequisitos')
     .select('*');
 
   if (prerequisitesError) {
@@ -29,21 +30,24 @@ export const loadCurriculumDataFromSupabase = async (): Promise<CurriculumData> 
 
   // Carregar cursos concluídos
   const { data: completedCourses, error: completedCoursesError } = await supabase
-    .from('completed_courses')
-    .select('course_id');
+    .from('disciplinas_concluidas')
+    .select('disciplina_id');
 
   if (completedCoursesError) {
     console.error('Erro ao carregar cursos concluídos:', completedCoursesError);
     return {
       courses: courses as Course[],
-      prerequisites: prerequisites as Prerequisite[],
+      prerequisites: prerequisites.map((prereq: any) => ({
+        from: prereq.from_disciplina,
+        to: prereq.to_disciplina
+      })),
       completedCourses: []
     };
   }
 
   // Carregar horários das disciplinas
   const { data: schedules, error: schedulesError } = await supabase
-    .from('course_schedules')
+    .from('horarios')
     .select('*');
 
   if (schedulesError) {
@@ -52,7 +56,7 @@ export const loadCurriculumDataFromSupabase = async (): Promise<CurriculumData> 
     // Adicionar horários às disciplinas
     courses.forEach((course: any) => {
       const courseSchedules = schedules.filter(
-        (schedule: any) => schedule.course_id === course.id
+        (schedule: any) => schedule.disciplina_id === course.id
       );
       
       if (courseSchedules.length > 0) {
@@ -65,12 +69,15 @@ export const loadCurriculumDataFromSupabase = async (): Promise<CurriculumData> 
   }
 
   return {
-    courses: courses as Course[],
+    courses: courses.map((course: any) => ({
+      ...course,
+      type: course.type as "NB" | "NP" | "NE" | "NA" // Cast to match CourseType
+    })) as Course[],
     prerequisites: prerequisites.map((prereq: any) => ({
-      from: prereq.from,
-      to: prereq.to
+      from: prereq.from_disciplina,
+      to: prereq.to_disciplina
     })),
-    completedCourses: completedCourses.map((item: any) => item.course_id)
+    completedCourses: completedCourses.map((item: any) => item.disciplina_id)
   };
 };
 
@@ -78,7 +85,7 @@ export const loadCurriculumDataFromSupabase = async (): Promise<CurriculumData> 
 export const saveCourseToSupabase = async (course: Course): Promise<boolean> => {
   // Verificar se a disciplina já existe
   const { data: existingCourse, error: checkError } = await supabase
-    .from('courses')
+    .from('disciplinas')
     .select('id')
     .eq('id', course.id)
     .single();
@@ -92,7 +99,7 @@ export const saveCourseToSupabase = async (course: Course): Promise<boolean> => 
 
   // Upsert da disciplina (insert ou update)
   const { error } = await supabase
-    .from('courses')
+    .from('disciplinas')
     .upsert({
       id: course.id,
       name: course.name,
@@ -115,20 +122,20 @@ export const saveCourseToSupabase = async (course: Course): Promise<boolean> => 
   if (course.schedules && course.schedules.length > 0) {
     // Primeiro remover horários existentes
     await supabase
-      .from('course_schedules')
+      .from('horarios')
       .delete()
-      .eq('course_id', course.id);
+      .eq('disciplina_id', course.id);
 
     // Inserir novos horários
     const schedulesData = course.schedules.map(schedule => ({
-      course_id: course.id,
+      disciplina_id: course.id,
       day: schedule.day,
       time: schedule.time,
       created_at: now
     }));
 
     const { error: scheduleError } = await supabase
-      .from('course_schedules')
+      .from('horarios')
       .insert(schedulesData);
 
     if (scheduleError) {
@@ -144,9 +151,9 @@ export const saveCourseToSupabase = async (course: Course): Promise<boolean> => 
 export const deleteCourseFromSupabase = async (courseId: string): Promise<boolean> => {
   // Excluir horários primeiro (restrição de chave estrangeira)
   const { error: scheduleError } = await supabase
-    .from('course_schedules')
+    .from('horarios')
     .delete()
-    .eq('course_id', courseId);
+    .eq('disciplina_id', courseId);
 
   if (scheduleError) {
     console.error('Erro ao excluir horários:', scheduleError);
@@ -155,7 +162,7 @@ export const deleteCourseFromSupabase = async (courseId: string): Promise<boolea
 
   // Excluir disciplina
   const { error } = await supabase
-    .from('courses')
+    .from('disciplinas')
     .delete()
     .eq('id', courseId);
 
@@ -172,9 +179,9 @@ export const addPrerequisiteToSupabase = async (
   from: string,
   to: string
 ): Promise<boolean> => {
-  const { error } = await supabase.from('prerequisites').insert({
-    from,
-    to,
+  const { error } = await supabase.from('prerequisitos').insert({
+    from_disciplina: from,
+    to_disciplina: to,
     created_at: new Date().toISOString()
   });
 
@@ -192,10 +199,10 @@ export const removePrerequisiteFromSupabase = async (
   to: string
 ): Promise<boolean> => {
   const { error } = await supabase
-    .from('prerequisites')
+    .from('prerequisitos')
     .delete()
-    .eq('from', from)
-    .eq('to', to);
+    .eq('from_disciplina', from)
+    .eq('to_disciplina', to);
 
   if (error) {
     console.error('Erro ao remover pré-requisito:', error);
@@ -209,8 +216,8 @@ export const removePrerequisiteFromSupabase = async (
 export const markCourseCompletedInSupabase = async (
   courseId: string
 ): Promise<boolean> => {
-  const { error } = await supabase.from('completed_courses').insert({
-    course_id: courseId,
+  const { error } = await supabase.from('disciplinas_concluidas').insert({
+    disciplina_id: courseId,
     created_at: new Date().toISOString()
   });
 
@@ -227,9 +234,9 @@ export const unmarkCourseCompletedInSupabase = async (
   courseId: string
 ): Promise<boolean> => {
   const { error } = await supabase
-    .from('completed_courses')
+    .from('disciplinas_concluidas')
     .delete()
-    .eq('course_id', courseId);
+    .eq('disciplina_id', courseId);
 
   if (error) {
     console.error('Erro ao desmarcar disciplina como concluída:', error);
@@ -243,7 +250,7 @@ export const unmarkCourseCompletedInSupabase = async (
 export const initializeSupabaseData = async (): Promise<boolean> => {
   // Verificar se já existem dados
   const { data: existingCourses, error: checkError } = await supabase
-    .from('courses')
+    .from('disciplinas')
     .select('id')
     .limit(1);
 
@@ -267,7 +274,7 @@ export const initializeSupabaseData = async (): Promise<boolean> => {
   }));
 
   const { error: coursesError } = await supabase
-    .from('courses')
+    .from('disciplinas')
     .insert(coursesData);
 
   if (coursesError) {
@@ -277,12 +284,13 @@ export const initializeSupabaseData = async (): Promise<boolean> => {
 
   // Inserir pré-requisitos
   const prerequisitesData = defaultCurriculumData.prerequisites.map(prereq => ({
-    ...prereq,
+    from_disciplina: prereq.from,
+    to_disciplina: prereq.to,
     created_at: now
   }));
 
   const { error: prerequisitesError } = await supabase
-    .from('prerequisites')
+    .from('prerequisitos')
     .insert(prerequisitesData);
 
   if (prerequisitesError) {
