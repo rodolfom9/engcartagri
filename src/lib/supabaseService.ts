@@ -203,7 +203,7 @@ export const saveCourseToSupabase = async (course: Course): Promise<boolean> => 
       // Preparar dados dos horários
       const schedulesData = {
         disciplina_id: course.id,
-        num_aulas: course.schedules.length,
+        nome: course.name,
         created_at: now,
         day1: course.schedules[0]?.day || null,
         time1: course.schedules[0]?.time || null,
@@ -473,7 +473,7 @@ export const initializeSupabaseData = async (): Promise<boolean> => {
     .map(course => {
       const scheduleData: any = {
         disciplina_id: course.id,
-        num_aulas: course.schedules ? course.schedules.length : 0,
+        nome: course.name,
         created_at: now
       };
 
