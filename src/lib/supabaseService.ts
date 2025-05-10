@@ -107,125 +107,115 @@ export const loadCurriculumDataFromSupabase = async (): Promise<CurriculumData> 
 };
 
 // Salvar disciplina no Supabase
-export const saveCourseToSupabase = async (course: Course): Promise<boolean> => {
+export const saveCourseToSupabase = async (course: Course): Promise<void> => {
   try {
-    // Verificar se a disciplina já existe
-    const { data: existingCourse, error: checkError } = await supabase
+    const { data: userData } = await supabase.auth.getSession();
+    
+    if (!userData?.session?.user) {
+      console.error('User not authenticated');
+      return;
+    }
+
+    // Determinar o número de aulas com base na carga horária
+    let numAulas = 1; // Padrão para 27h
+    if (course.hours === '54') {
+      numAulas = 2;
+    } else if (course.hours === '81') {
+      numAulas = 3;
+    }
+
+    // Preparar os dados do curso
+    const courseData = {
+      id: course.id,
+      name: course.name,
+      period: course.period,
+      row: course.row,
+      hours: course.hours,
+      type: course.type,
+      credits: course.credits,
+      professor: course.professor,
+      user_id: userData.session.user.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    // Verificar se o curso já existe
+    const { data: existingCourse } = await supabase
       .from('disciplinas')
       .select('id')
       .eq('id', course.id)
       .single();
 
-    if (checkError && checkError.code !== 'PGRST116') {
-      console.error('Erro ao verificar disciplina:', checkError);
-      return false;
-    }
+    if (existingCourse) {
+      // Atualizar curso existente
+      const { error: updateError } = await supabase
+        .from('disciplinas')
+        .update(courseData)
+        .eq('id', course.id);
 
-    const now = new Date().toISOString();
-
-    // Get the current authenticated user
-    const { data: userData } = await supabase.auth.getSession();
-    
-    if (!userData?.session?.user) {
-      console.error('Usuário não autenticado ao salvar disciplina');
-      return false;
-    }
-
-    // Upsert da disciplina (insert ou update)
-    const { error } = await supabase
-      .from('disciplinas')
-      .upsert({
-        id: course.id,
-        name: course.name,
-        period: course.period,
-        row: course.row,
-        hours: course.hours,
-        type: course.type,
-        credits: course.credits,
-        professor: course.professor || null,
-        user_id: userData.session.user.id,
-        updated_at: now,
-        created_at: existingCourse ? undefined : now
-      });
-
-    if (error) {
-      console.error('Erro ao salvar disciplina:', error);
-      return false;
-    }
-
-    // Se houver horários, salvar ou atualizar
-    if (course.schedules && course.schedules.length > 0) {
-      // Primeiro verificar se já existe um registro de horário para esta disciplina
-      const { data: existingSchedule, error: checkScheduleError } = await supabase
-        .from('horarios')
-        .select('id')
-        .eq('disciplina_id', course.id)
-        .single();
-
-      // Preparar dados para inserção/atualização
-      const schedulesData: any = {
-        disciplina_id: course.id,
-        nome: course.name,
-        num_aulas: course.schedules.length,
-        updated_at: now
-      };
-
-      // Adicionar os campos de dia e hora conforme disponíveis
-      if (course.schedules[0]) {
-        schedulesData.day1 = course.schedules[0].day;
-        schedulesData.time1 = course.schedules[0].time;
-      }
-
-      if (course.schedules[1]) {
-        schedulesData.day2 = course.schedules[1].day;
-        schedulesData.time2 = course.schedules[1].time;
-      }
-
-      if (course.schedules[2]) {
-        schedulesData.day3 = course.schedules[2].day;
-        schedulesData.time3 = course.schedules[2].time;
-      }
-
-      // Se existir um registro, atualizar; senão, inserir
-      if (existingSchedule && !checkScheduleError) {
-        schedulesData.id = existingSchedule.id;
-        const { error: updateError } = await supabase
-          .from('horarios')
-          .update(schedulesData)
-          .eq('id', existingSchedule.id);
-
-        if (updateError) {
-          console.error('Erro ao atualizar horários:', updateError);
-          return false;
-        }
-      } else {
-        schedulesData.created_at = now;
-        const { error: insertError } = await supabase
-          .from('horarios')
-          .insert(schedulesData);
-
-        if (insertError) {
-          console.error('Erro ao inserir horários:', insertError);
-          return false;
-        }
-      }
+      if (updateError) throw updateError;
     } else {
-      // Se não tiver horários, remover registro existente
-      const { error: deleteError } = await supabase
-        .from('horarios')
-        .delete()
-        .eq('disciplina_id', course.id);
+      // Inserir novo curso
+      const { error: insertError } = await supabase
+        .from('disciplinas')
+        .insert(courseData);
 
-      if (deleteError) {
-        console.error('Erro ao remover horários:', deleteError);
-        return false;
+      if (insertError) throw insertError;
+    }
+
+    // Preparar dados do horário
+    const scheduleData: any = {
+      disciplina_id: course.id,
+      nome: course.name,
+      num_aulas: numAulas,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    // Adicionar apenas os campos de horário necessários com base no número de aulas
+    if (course.schedules && course.schedules.length > 0) {
+      if (numAulas >= 1 && course.schedules[0]) {
+        scheduleData.day1 = course.schedules[0].day;
+        scheduleData.time1 = course.schedules[0].time;
+      }
+      
+      if (numAulas >= 2 && course.schedules[1]) {
+        scheduleData.day2 = course.schedules[1].day;
+        scheduleData.time2 = course.schedules[1].time;
+      }
+      
+      if (numAulas >= 3 && course.schedules[2]) {
+        scheduleData.day3 = course.schedules[2].day;
+        scheduleData.time3 = course.schedules[2].time;
       }
     }
 
-    return true;
+    // Verificar se já existe um horário para esta disciplina
+    const { data: existingSchedule } = await supabase
+      .from('horarios')
+      .select('id')
+      .eq('disciplina_id', course.id)
+      .single();
+
+    if (existingSchedule) {
+      // Atualizar horário existente
+      const { error: updateError } = await supabase
+        .from('horarios')
+        .update(scheduleData)
+        .eq('id', existingSchedule.id);
+
+      if (updateError) throw updateError;
+    } else {
+      // Inserir novo horário
+      const { error: insertError } = await supabase
+        .from('horarios')
+        .insert(scheduleData);
+
+      if (insertError) throw insertError;
+    }
   } catch (error) {
-    console.error('Erro geral ao salvar disciplina:', error);
-    return false;
+    console.error('Error saving course to Supabase:', error);
+    throw error;
   }
 };
 
