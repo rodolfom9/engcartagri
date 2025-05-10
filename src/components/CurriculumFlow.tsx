@@ -413,15 +413,18 @@ const CurriculumFlow: React.FC = () => {
               }}
               onUpdateCourseId={async (oldId: string, newId: string) => {
                 try {
-                  // Atualizar no Supabase
-                  const { error } = await supabase
+                  // Verificar se o novo ID já existe
+                  const { data: existingCourse } = await supabase
                     .from('disciplinas')
-                    .update({ id: newId })
-                    .eq('id', oldId);
+                    .select('id')
+                    .eq('id', newId)
+                    .single();
 
-                  if (error) throw error;
+                  if (existingCourse) {
+                    throw new Error('Já existe uma disciplina com este ID');
+                  }
 
-                  // Atualizar horários
+                  // Atualizar horários primeiro (devido à chave estrangeira)
                   const { error: horariosError } = await supabase
                     .from('horarios')
                     .update({ disciplina_id: newId })
@@ -452,6 +455,14 @@ const CurriculumFlow: React.FC = () => {
                     .eq('disciplina_id', oldId);
 
                   if (completedError) throw completedError;
+
+                  // Finalmente, atualizar a disciplina
+                  const { error } = await supabase
+                    .from('disciplinas')
+                    .update({ id: newId })
+                    .eq('id', oldId);
+
+                  if (error) throw error;
 
                   // Atualizar estado local
                   const newData = { ...curriculumData };
@@ -491,9 +502,13 @@ const CurriculumFlow: React.FC = () => {
 
                   setCurriculumData(newData);
                   setSchedule(newSchedule);
+
+                  // Forçar recarga dos dados do Supabase
+                  const updatedData = await loadCurriculumDataAsync();
+                  setCurriculumData(updatedData);
                 } catch (error: any) {
                   console.error('Erro ao atualizar ID:', error);
-                  throw new Error(error.message);
+                  throw new Error(error.message || 'Erro ao atualizar ID da disciplina');
                 }
               }}
             />

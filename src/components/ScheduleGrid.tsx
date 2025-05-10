@@ -34,18 +34,33 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
   const handleEditId = async (course: Course) => {
     if (!onUpdateCourseId) return;
     
+    if (!newId.trim()) {
+      toast({
+        title: "Erro",
+        description: "O ID não pode estar vazio",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (newId === course.id) {
+      setEditingId(null);
+      setNewId('');
+      return;
+    }
+
     try {
-      await onUpdateCourseId(course.id, newId);
+      await onUpdateCourseId(course.id, newId.trim());
       setEditingId(null);
       setNewId('');
       toast({
         title: "Sucesso",
         description: "ID da disciplina atualizado com sucesso",
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Erro",
-        description: "Não foi possível atualizar o ID da disciplina",
+        description: error.message || "Não foi possível atualizar o ID da disciplina",
         variant: "destructive"
       });
     }
@@ -75,22 +90,30 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
                         <div className="flex items-center gap-2">
                           <span className="font-semibold">{course.name}</span>
                           {editingId === course.id ? (
-                            <div className="flex items-center gap-1">
+                            <form 
+                              className="flex items-center gap-1"
+                              onSubmit={(e) => {
+                                e.preventDefault();
+                                handleEditId(course);
+                              }}
+                            >
                               <Input
                                 value={newId}
                                 onChange={(e) => setNewId(e.target.value)}
                                 className="h-6 w-24 text-xs"
                                 placeholder="Novo ID"
+                                autoFocus
                               />
                               <Button
+                                type="submit"
                                 size="sm"
                                 variant="outline"
                                 className="h-6 px-2 py-0"
-                                onClick={() => handleEditId(course)}
                               >
                                 OK
                               </Button>
                               <Button
+                                type="button"
                                 size="sm"
                                 variant="ghost"
                                 className="h-6 px-2 py-0"
@@ -101,7 +124,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
                               >
                                 Cancelar
                               </Button>
-                            </div>
+                            </form>
                           ) : (
                             <div className="flex items-center gap-1">
                               <span className="text-xs text-gray-500">({course.id})</span>
