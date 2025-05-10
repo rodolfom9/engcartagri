@@ -136,9 +136,20 @@ export const loadCurriculumDataAsync = async (): Promise<CurriculumData> => {
 
     // Map the data to match our application's structure
     const mappedCourses = courses.map(course => {
-      const courseSchedules = schedules
-        .filter(s => s.disciplina_id === course.id)
-        .map(s => ({ day: s.day, time: s.time }));
+      const courseSchedule = schedules.find(s => s.disciplina_id === course.id);
+      const courseSchedules = [];
+      
+      if (courseSchedule) {
+        if (courseSchedule.day1 && courseSchedule.time1) {
+          courseSchedules.push({ day: courseSchedule.day1, time: courseSchedule.time1 });
+        }
+        if (courseSchedule.day2 && courseSchedule.time2) {
+          courseSchedules.push({ day: courseSchedule.day2, time: courseSchedule.time2 });
+        }
+        if (courseSchedule.day3 && courseSchedule.time3) {
+          courseSchedules.push({ day: courseSchedule.day3, time: courseSchedule.time3 });
+        }
+      }
 
       return {
         id: course.id,
@@ -146,7 +157,7 @@ export const loadCurriculumDataAsync = async (): Promise<CurriculumData> => {
         period: course.period,
         row: course.row,
         hours: course.hours,
-        type: course.type as "NB" | "NP" | "NE" | "NA", // Cast to CourseType
+        type: course.type as "NB" | "NP" | "NE" | "NA",
         credits: course.credits,
         professor: course.professor,
         schedules: courseSchedules.length > 0 ? courseSchedules : undefined

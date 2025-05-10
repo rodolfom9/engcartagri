@@ -41,15 +41,11 @@ const CurriculumFlow: React.FC = () => {
       setLoading(true);
       
       try {
-        // Inicializar dados no Supabase se necessário
         await initializeData();
-        
-        // Carregar dados do Supabase
         const data = await loadCurriculumDataAsync();
         setCurriculumData(data);
       } catch (error) {
         console.error('Erro ao carregar dados:', error);
-        // Fallback para dados locais em caso de erro
         const localData = loadCurriculumData();
         setCurriculumData(localData);
       } finally {
@@ -60,49 +56,61 @@ const CurriculumFlow: React.FC = () => {
     fetchData();
     
     // Set up realtime subscriptions for Supabase
-    const coursesSubscription = supabase
-      .channel('curriculum-changes-courses')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'disciplinas' },
-        (payload) => {
-          console.log('Courses change detected:', payload);
-          // Reload data when changes are detected
-          loadCurriculumDataAsync().then(data => setCurriculumData(data));
-        }
-      )
-      .subscribe();
-    
-    const prerequisitesSubscription = supabase
-      .channel('curriculum-changes-prerequisites')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'prerequisitos' },
-        (payload) => {
-          console.log('Prerequisites change detected:', payload);
-          // Reload data when changes are detected
-          loadCurriculumDataAsync().then(data => setCurriculumData(data));
-        }
-      )
-      .subscribe();
-    
-    const completedCoursesSubscription = supabase
-      .channel('curriculum-changes-completed')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'disciplinas_concluidas' },
-        (payload) => {
-          console.log('Completed courses change detected:', payload);
-          // Reload data when changes are detected
-          loadCurriculumDataAsync().then(data => setCurriculumData(data));
-        }
-      )
-      .subscribe();
+    const subscriptions = [
+      supabase
+        .channel('curriculum-changes-courses')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'disciplinas' },
+          (payload) => {
+            console.log('Courses change detected:', payload);
+            loadCurriculumDataAsync().then(data => setCurriculumData(data));
+          }
+        )
+        .subscribe(),
+      
+      supabase
+        .channel('curriculum-changes-prerequisites')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'prerequisitos' },
+          (payload) => {
+            console.log('Prerequisites change detected:', payload);
+            loadCurriculumDataAsync().then(data => setCurriculumData(data));
+          }
+        )
+        .subscribe(),
+      
+      supabase
+        .channel('curriculum-changes-completed')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'disciplinas_concluidas' },
+          (payload) => {
+            console.log('Completed courses change detected:', payload);
+            loadCurriculumDataAsync().then(data => setCurriculumData(data));
+          }
+        )
+        .subscribe(),
+
+      supabase
+        .channel('curriculum-changes-horarios')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'horarios' },
+          (payload) => {
+            console.log('Schedules change detected:', payload);
+            loadCurriculumDataAsync().then(data => setCurriculumData(data));
+          }
+        )
+        .subscribe()
+    ];
     
     return () => {
-      supabase.removeChannel(coursesSubscription);
-      supabase.removeChannel(prerequisitesSubscription);
-      supabase.removeChannel(completedCoursesSubscription);
+      // Cleanup all subscriptions
+      subscriptions.forEach(subscription => {
+        supabase.removeChannel(subscription);
+      });
     };
   }, []);
 
