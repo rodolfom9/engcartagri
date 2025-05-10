@@ -231,29 +231,66 @@ export const saveCourseToSupabase = async (course: Course): Promise<boolean> => 
 
 // Excluir disciplina do Supabase
 export const deleteCourseFromSupabase = async (courseId: string): Promise<boolean> => {
-  // Excluir horários primeiro (restrição de chave estrangeira)
-  const { error: scheduleError } = await supabase
-    .from('horarios')
-    .delete()
-    .eq('disciplina_id', courseId);
+  try {
+    // Excluir disciplinas concluídas primeiro (restrição de chave estrangeira)
+    const { error: completedCoursesError } = await supabase
+      .from('disciplinas_concluidas')
+      .delete()
+      .eq('disciplina_id', courseId);
 
-  if (scheduleError) {
-    console.error('Erro ao excluir horários:', scheduleError);
+    if (completedCoursesError) {
+      console.error('Erro ao excluir disciplinas concluídas:', completedCoursesError);
+      return false;
+    }
+
+    // Excluir pré-requisitos relacionados a esta disciplina (restrição de chave estrangeira)
+    const { error: prerequisitesFromError } = await supabase
+      .from('prerequisitos')
+      .delete()
+      .eq('from_disciplina', courseId);
+
+    if (prerequisitesFromError) {
+      console.error('Erro ao excluir pré-requisitos (from):', prerequisitesFromError);
+      return false;
+    }
+
+    const { error: prerequisitesToError } = await supabase
+      .from('prerequisitos')
+      .delete()
+      .eq('to_disciplina', courseId);
+
+    if (prerequisitesToError) {
+      console.error('Erro ao excluir pré-requisitos (to):', prerequisitesToError);
+      return false;
+    }
+
+    // Excluir horários (restrição de chave estrangeira)
+    const { error: scheduleError } = await supabase
+      .from('horarios')
+      .delete()
+      .eq('disciplina_id', courseId);
+
+    if (scheduleError) {
+      console.error('Erro ao excluir horários:', scheduleError);
+      return false;
+    }
+
+    // Finalmente, excluir a disciplina
+    const { error } = await supabase
+      .from('disciplinas')
+      .delete()
+      .eq('id', courseId);
+
+    if (error) {
+      console.error('Erro ao excluir disciplina:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Erro geral ao excluir disciplina:', error);
     return false;
   }
-
-  // Excluir disciplina
-  const { error } = await supabase
-    .from('disciplinas')
-    .delete()
-    .eq('id', courseId);
-
-  if (error) {
-    console.error('Erro ao excluir disciplina:', error);
-    return false;
-  }
-
-  return true;
 };
 
 // Adicionar pré-requisito no Supabase

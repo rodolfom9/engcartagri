@@ -83,24 +83,45 @@ export type Database = {
       horarios: {
         Row: {
           created_at: string
-          day: string
+          day1: string | null
+          day2: string | null
+          day3: string | null
           disciplina_id: string
           id: string
-          time: string
+          nome: string
+          num_aulas: number
+          time1: string | null
+          time2: string | null
+          time3: string | null
+          updated_at: string | null
         }
         Insert: {
           created_at?: string
-          day: string
+          day1?: string | null
+          day2?: string | null
+          day3?: string | null
           disciplina_id: string
           id?: string
-          time: string
+          nome?: string
+          num_aulas?: number
+          time1?: string | null
+          time2?: string | null
+          time3?: string | null
+          updated_at?: string | null
         }
         Update: {
           created_at?: string
-          day?: string
+          day1?: string | null
+          day2?: string | null
+          day3?: string | null
           disciplina_id?: string
           id?: string
-          time?: string
+          nome?: string
+          num_aulas?: number
+          time1?: string | null
+          time2?: string | null
+          time3?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {

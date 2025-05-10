@@ -1,7 +1,7 @@
 import { CurriculumData, Course, Prerequisite } from '../types/curriculum';
 import { defaultCurriculumData } from '../data/courses';
 import { supabase } from '../integrations/supabase/client';
-import { saveCourseToSupabase } from './supabaseService';
+import { saveCourseToSupabase, deleteCourseFromSupabase, addPrerequisiteToSupabase, removePrerequisiteFromSupabase, markCourseCompletedInSupabase, unmarkCourseCompletedInSupabase, initializeSupabaseData } from './supabaseService';
 
 const STORAGE_KEY = 'curriculum_data';
 
@@ -245,6 +245,7 @@ export const deleteCourse = async (courseId: string): Promise<CurriculumData> =>
   data.prerequisites = data.prerequisites.filter(
     p => p.from !== courseId && p.to !== courseId
   );
+  data.completedCourses = data.completedCourses.filter(id => id !== courseId);
   
   saveCurriculumData(data);
   
@@ -253,13 +254,11 @@ export const deleteCourse = async (courseId: string): Promise<CurriculumData> =>
     
     // Delete from Supabase if user is authenticated
     if (userData?.session?.user) {
-      // Supabase will handle cascade deleting related records due to ON DELETE CASCADE
-      const { error } = await supabase
-        .from('disciplinas')
-        .delete()
-        .eq('id', courseId);
-      
-      if (error) throw error;
+      // Usar a função deleteCourseFromSupabase que lida com restrições de chave estrangeira
+      const success = await deleteCourseFromSupabase(courseId);
+      if (!success) {
+        console.error('Erro ao excluir disciplina no Supabase');
+      }
     }
   } catch (error) {
     console.error('Error deleting course from Supabase:', error);
@@ -424,10 +423,13 @@ export const importCurriculumToSupabase = async (data: CurriculumData): Promise<
       created_at: new Date().toISOString()
     }));
     
-    await supabase
-      .from('prerequisitos')
-      .delete()
-      .eq('from_disciplina', coursesForInsert.map(c => c.id));
+    // Excluir pré-requisitos existentes
+    if (coursesForInsert.length > 0) {
+      await supabase
+        .from('prerequisitos')
+        .delete()
+        .in('from_disciplina', coursesForInsert.map(c => c.id));
+    }
       
     if (prerequisitesForInsert.length > 0) {
       const { error: prerequisitesError } = await supabase
