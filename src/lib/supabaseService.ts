@@ -193,10 +193,7 @@ export const saveCourseToSupabase = async (course: Course): Promise<boolean> => 
       // Preparar dados dos horários
       const schedulesData = {
         disciplina_id: course.id,
-        nome: course.name,
-        num_aulas: course.schedules.length,
         created_at: now,
-        updated_at: now,
         day1: course.schedules[0]?.day || null,
         time1: course.schedules[0]?.time || null,
         day2: course.schedules[1]?.day || null,
