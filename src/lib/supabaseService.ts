@@ -1,4 +1,3 @@
-
 import { supabase } from '../integrations/supabase/client';
 import { Course, Prerequisite, CurriculumData } from '../types/curriculum';
 
@@ -468,83 +467,9 @@ export const initializeSupabaseData = async (): Promise<boolean> => {
     return true;
   }
 
-  const now = new Date().toISOString();
-
-  // Inserir disciplinas
-  const coursesData = defaultCurriculumData.courses.map(course => ({
-    ...course,
-    created_at: now,
-    updated_at: now
-  }));
-
-  // Inserir disciplinas
-  const { error: coursesError } = await supabase
-    .from('disciplinas')
-    .insert(coursesData);
-
-  if (coursesError) {
-    console.error('Erro ao inicializar disciplinas:', coursesError);
-    return false;
-  }
-
-  // Inserir pré-requisitos
-  const prerequisitesData = defaultCurriculumData.prerequisites.map(prereq => ({
-    from_disciplina: prereq.from,
-    to_disciplina: prereq.to,
-    created_at: now
-  }));
-
-  const { error: prerequisitesError } = await supabase
-    .from('prerequisitos')
-    .insert(prerequisitesData);
-
-  if (prerequisitesError) {
-    console.error('Erro ao inicializar pré-requisitos:', prerequisitesError);
-    return false;
-  }
-  
-  // Formatar e inserir horários com a nova estrutura
-  const schedulesData = defaultCurriculumData.courses
-    .filter(course => course.schedules && course.schedules.length > 0)
-    .map(course => {
-      const scheduleData: any = {
-        disciplina_id: course.id,
-        nome: course.name,
-        num_aulas: course.schedules ? course.schedules.length : 0,
-        created_at: now
-      };
-
-      // Adicionar campos de dia e hora, se houver
-      if (course.schedules && course.schedules.length > 0) {
-        if (course.schedules[0]) {
-          scheduleData.day1 = course.schedules[0].day;
-          scheduleData.time1 = course.schedules[0].time;
-        }
-        
-        if (course.schedules[1]) {
-          scheduleData.day2 = course.schedules[1].day;
-          scheduleData.time2 = course.schedules[1].time;
-        }
-        
-        if (course.schedules[2]) {
-          scheduleData.day3 = course.schedules[2].day;
-          scheduleData.time3 = course.schedules[2].time;
-        }
-      }
-      
-      return scheduleData;
-    });
-
-  if (schedulesData.length > 0) {
-    const { error: schedulesError } = await supabase
-      .from('horarios')
-      .insert(schedulesData);
-
-    if (schedulesError) {
-      console.error('Erro ao inicializar horários:', schedulesError);
-      return false;
-    }
-  }
-
+  // Como não temos mais os dados padrão definidos estaticamente,
+  // simplesmente retornamos true, já que o usuário deverá importar dados
+  // ou criar manualmente no Supabase
+  console.log('Nenhum dado padrão disponível para inicialização. O usuário precisará importar dados.');
   return true;
 };
