@@ -110,6 +110,20 @@ const CourseNode = ({ data }: CourseNodeProps) => {
           <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
             <span>{course.credits} créd.</span>
             <span>{course.hours}h</span>
+            <button
+              className={`ml-2 px-2 py-0.5 rounded text-xs font-semibold border transition-colors
+                ${isCompleted
+                  ? 'bg-green-100 text-green-700 border-green-400 cursor-pointer'
+                  : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200 hover:text-gray-800 cursor-pointer'}
+              `}
+              onClick={e => {
+                e.stopPropagation();
+                onToggleCompletion(course.id);
+              }}
+              title={isCompleted ? 'Desmarcar como concluído' : 'Marcar como concluído'}
+            >
+              {isCompleted ? 'Concluído' : 'Concluir'}
+            </button>
           </div>
         </div>
       </div>
@@ -302,7 +316,7 @@ const OrthogonalEdge: React.FC<EdgeProps> = ({
 
     // 5. Direita até o destino
     const finalX = targetX;
-    const finalY = targetY;
+    const finalY = row7Y; // Alinhar horizontalmente com o destino
 
     pathPoints = [
       { x: startX, y: startY },         // Ponto inicial
@@ -434,6 +448,11 @@ const CurriculumFlowGraph: React.FC<CurriculumFlowGraphProps> = ({
 
     const isCalculusToGeodesy2Connection =
       prereq.from === 'DPAA-2.0024' && prereq.to === 'DPAA-2.0195';
+
+    // Definir cor da aresta conforme o tipo
+    let edgeColor = '#EF4444'; // vermelho padrão (pré-requisito)
+    if (prereq.tipo === 2) edgeColor = '#3B82F6'; // azul (co-requisito)
+    if (prereq.tipo === 3) edgeColor = '#FACC15'; // amarelo (pré-requisito flexível)
     
     return {
       id: `${prereq.from}-${prereq.to}`,
@@ -443,12 +462,12 @@ const CurriculumFlowGraph: React.FC<CurriculumFlowGraphProps> = ({
       type: 'orthogonal',
       animated: true,
       style: { 
-        stroke: isPrereqCompleted ? '#22C55E' : '#EF4444',
+        stroke: isPrereqCompleted ? '#22C55E' : edgeColor,
         strokeWidth: 2,
       },
       markerEnd: {
         type: MarkerType.ArrowClosed,
-        color: isPrereqCompleted ? '#22C55E' : '#EF4444',
+        color: isPrereqCompleted ? '#22C55E' : edgeColor,
       },
       data: {
         isElectroConnection,
