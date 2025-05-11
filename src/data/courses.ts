@@ -1,4 +1,3 @@
-
 import { Course, Prerequisite, CurriculumData } from '../types/curriculum';
 
 // Dados das disciplinas do curso
@@ -97,29 +96,29 @@ export const coursesData: Course[] = [
 
 // Pré-requisitos entre disciplinas
 export const prerequisitesData: Prerequisite[] = [
-  { from: "calc1", to: "calc2", tipo: 1 },
-  { from: "calc2", to: "calc3", tipo: 1 },
-  { from: "fis1", to: "fis2", tipo: 1 },
-  { from: "fis2", to: "fis3", tipo: 1 },
-  { from: "topo1", to: "topo2", tipo: 1 },
-  { from: "topo2", to: "topo3", tipo: 1 },
-  { from: "lab1", to: "lab2", tipo: 1 },
-  { from: "lab2", to: "lab3", tipo: 1 },
-  { from: "desenho", to: "desenho2", tipo: 1 },
-  { from: "aj1", to: "aj2", tipo: 1 },
-  { from: "astro", to: "geo3", tipo: 1 },
-  { from: "geo1", to: "geo2", tipo: 1 },
-  { from: "geo2", to: "geo3", tipo: 1 },
-  { from: "proc1", to: "proc2", tipo: 1 },
-  { from: "foto1", to: "foto2", tipo: 1 },
-  { from: "cad1", to: "cad2", tipo: 1 },
-  { from: "cart1", to: "cart2", tipo: 1 },
-  { from: "fis3", to: "elet", tipo: 1 },
-  { from: "topo3", to: "lev", tipo: 1 },
-  { from: "fis2", to: "geo2", tipo: 1 },
-  { from: "banco", to: "sig1", tipo: 1 },
-  { from: "banco", to: "cad1", tipo: 1 },
-  { from: "est", to: "geoest", tipo: 1 },
+  { from: "calc1", to: "calc2" },
+  { from: "calc2", to: "calc3" },
+  { from: "fis1", to: "fis2" },
+  { from: "fis2", to: "fis3" },
+  { from: "topo1", to: "topo2" },
+  { from: "topo2", to: "topo3" },
+  { from: "lab1", to: "lab2" },
+  { from: "lab2", to: "lab3" },
+  { from: "desenho", to: "desenho2" },
+  { from: "aj1", to: "aj2" },
+  { from: "astro", to: "geo3" },
+  { from: "geo1", to: "geo2" },
+  { from: "geo2", to: "geo3" },
+  { from: "proc1", to: "proc2" },
+  { from: "foto1", to: "foto2" },
+  { from: "cad1", to: "cad2" },
+  { from: "cart1", to: "cart2" },
+  { from: "fis3", to: "elet" },
+  { from: "topo3", to: "lev" },
+  { from: "fis2", to: "geo2" },
+  { from: "banco", to: "sig1" },
+  { from: "banco", to: "cad1" },
+  { from: "est", to: "geoest" },
 ];
 
 // Dados padrão para o currículo

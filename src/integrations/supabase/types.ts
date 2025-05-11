@@ -88,9 +88,12 @@ export type Database = {
           day3: string | null
           disciplina_id: string
           id: string
+          nome: string
+          num_aulas: number
           time1: string | null
           time2: string | null
           time3: string | null
+          updated_at: string | null
         }
         Insert: {
           created_at?: string
@@ -99,9 +102,12 @@ export type Database = {
           day3?: string | null
           disciplina_id: string
           id?: string
+          nome?: string
+          num_aulas?: number
           time1?: string | null
           time2?: string | null
           time3?: string | null
+          updated_at?: string | null
         }
         Update: {
           created_at?: string
@@ -110,9 +116,12 @@ export type Database = {
           day3?: string | null
           disciplina_id?: string
           id?: string
+          nome?: string
+          num_aulas?: number
           time1?: string | null
           time2?: string | null
           time3?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -129,21 +138,18 @@ export type Database = {
           created_at: string
           from_disciplina: string
           id: string
-          tipo: number | null
           to_disciplina: string
         }
         Insert: {
           created_at?: string
           from_disciplina: string
           id?: string
-          tipo?: number | null
           to_disciplina: string
         }
         Update: {
           created_at?: string
           from_disciplina?: string
           id?: string
-          tipo?: number | null
           to_disciplina?: string
         }
         Relationships: [
