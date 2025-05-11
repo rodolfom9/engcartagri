@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -53,7 +54,7 @@ const PrerequisiteForm: React.FC<PrerequisiteFormProps> = ({ courses, onSave, on
     }
 
     try {
-      const prerequisite = { from: fromCourseId, to: toCourseId, type: parseInt(selectedType) };
+      const prerequisite = { from: fromCourseId, to: toCourseId, tipo: parseInt(selectedType) };
       addPrerequisite(fromCourseId, toCourseId, parseInt(selectedType));
       onSave(prerequisite);
       toast({
