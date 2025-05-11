@@ -1,0 +1,202 @@
+import React, { useCallback } from 'react';
+import ReactFlow, {
+  Node,
+  Edge,
+  Background,
+  Controls,
+  Handle,
+  Position,
+  NodeProps,
+  ConnectionMode,
+} from 'reactflow';
+import 'reactflow/dist/style.css';
+import { Course } from '@/types/curriculum';
+
+interface CourseNodeProps extends NodeProps {
+  data: {
+    course: Course;
+    isCompleted: boolean;
+    canTake: boolean;
+    onToggleCompletion: (id: string) => void;
+    onClick: (course: Course) => void;
+  };
+}
+
+const CourseNode = ({ data }: CourseNodeProps) => {
+  const { course, isCompleted, canTake, onToggleCompletion, onClick } = data;
+  
+  const getBgColor = () => {
+    if (isCompleted) return 'bg-green-100';
+    
+    switch (course.type) {
+      case 'NB':
+        return 'bg-pink-100'; // Rosa claro para NB
+      case 'NP':
+        return 'bg-blue-100'; // Azul claro para NP
+      case 'NE':
+        return 'bg-yellow-100'; // Amarelo claro para NE
+      default:
+        return 'bg-white';
+    }
+  };
+
+  const getBorderColor = () => {
+    if (isCompleted) return 'border-green-500';
+    if (!canTake) return 'border-gray-300';
+    
+    switch (course.type) {
+      case 'NB':
+        return 'border-pink-400'; // Rosa para NB
+      case 'NP':
+        return 'border-blue-400'; // Azul para NP
+      case 'NE':
+        return 'border-yellow-400'; // Amarelo para NE
+      default:
+        return 'border-gray-400';
+    }
+  };
+
+  const getTextColor = () => {
+    if (isCompleted) return 'text-green-700';
+    if (!canTake) return 'text-gray-500';
+    
+    switch (course.type) {
+      case 'NB':
+        return 'text-pink-700'; // Rosa escuro para NB
+      case 'NP':
+        return 'text-blue-700'; // Azul escuro para NP
+      case 'NE':
+        return 'text-yellow-700'; // Amarelo escuro para NE
+      default:
+        return 'text-gray-700';
+    }
+  };
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'NB':
+        return 'text-pink-600'; // Rosa para NB
+      case 'NP':
+        return 'text-blue-600'; // Azul para NP
+      case 'NE':
+        return 'text-yellow-600'; // Amarelo para NE
+      default:
+        return 'text-gray-600';
+    }
+  };
+
+  return (
+    <div
+      className={`p-2 rounded-lg border-2 shadow-sm cursor-pointer ${getBgColor()} ${getBorderColor()}`}
+      style={{ 
+        width: 160,
+        height: 100,
+        minHeight: 100,
+        maxHeight: 100
+      }}
+      onClick={() => onClick(course)}
+    >
+      <Handle type="target" position={Position.Left} className="!bg-gray-400" />
+      <div className="flex flex-col h-full justify-between">
+        <div className={`text-sm font-semibold leading-tight ${getTextColor()}`}>{course.name}</div>
+        <div>
+          <div className="flex items-center justify-between text-xs">
+            <span className={`${getTypeColor(course.type)}`}>{course.type}</span>
+            <span className="text-gray-500">{course.id}</span>
+          </div>
+          <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
+            <span>{course.credits} créd.</span>
+            <span>{course.hours}h</span>
+          </div>
+        </div>
+      </div>
+      <Handle type="source" position={Position.Right} className="!bg-gray-400" />
+    </div>
+  );
+};
+
+interface CurriculumFlowGraphProps {
+  courses: Course[];
+  prerequisites: Array<{ from: string; to: string; tipo: number }>;
+  completedCourses: string[];
+  onToggleCompletion: (id: string) => void;
+  onCourseClick: (course: Course) => void;
+}
+
+const CurriculumFlowGraph: React.FC<CurriculumFlowGraphProps> = ({
+  courses,
+  prerequisites,
+  completedCourses,
+  onToggleCompletion,
+  onCourseClick,
+}) => {
+  const nodeTypes = {
+    courseNode: CourseNode,
+  };
+
+  // Criar nós
+  const nodes: Node[] = courses.map((course) => ({
+    id: course.id,
+    type: 'courseNode',
+    position: { 
+      x: (course.period - 1) * 230, 
+      y: (course.row - 1) * 150 
+    },
+    data: {
+      course,
+      isCompleted: completedCourses.includes(course.id),
+      canTake: prerequisites
+        .filter(p => p.to === course.id)
+        .every(p => completedCourses.includes(p.from)),
+      onToggleCompletion,
+      onClick: onCourseClick,
+    },
+  }));
+
+  // Criar arestas (conexões)
+  const edges: Edge[] = prerequisites.map((prereq) => {
+    const isPrereqCompleted = completedCourses.includes(prereq.from);
+    return {
+      id: `${prereq.from}-${prereq.to}`,
+      source: prereq.from,
+      target: prereq.to,
+      type: 'smoothstep',
+      animated: true,
+      style: { 
+        stroke: isPrereqCompleted ? '#22C55E' : '#EF4444',
+        strokeWidth: 2,
+      },
+      markerEnd: {
+        type: 'arrowclosed',
+        color: isPrereqCompleted ? '#22C55E' : '#EF4444',
+      },
+    };
+  });
+
+  return (
+    <div style={{ width: '100%', height: '70vh' }}>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        nodeTypes={nodeTypes}
+        connectionMode={ConnectionMode.Loose}
+        fitView
+        minZoom={0.1}
+        maxZoom={1.5}
+        defaultZoom={0.7}
+        attributionPosition="bottom-left"
+        defaultEdgeOptions={{
+          type: 'smoothstep',
+          animated: true,
+          style: { stroke: '#EF4444', strokeWidth: 2 },
+          markerEnd: { type: 'arrowclosed', color: '#EF4444' },
+        }}
+      >
+        <Background />
+        <Controls />
+      </ReactFlow>
+    </div>
+  );
+};
+
+export default CurriculumFlowGraph; 
