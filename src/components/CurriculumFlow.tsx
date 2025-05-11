@@ -304,7 +304,7 @@ const CurriculumFlow: React.FC = () => {
       <div className="mb-2"> {/* Reduzi mais a margem inferior */}
         <ProgressBar 
           percentage={calculateCompletedHours()} 
-          label="de Carga Horária Cumprida"
+          label=" Porcentagem de Carga Horária Cumprida"
         />
       </div>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
