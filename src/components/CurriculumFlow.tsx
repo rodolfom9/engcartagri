@@ -399,35 +399,39 @@ const CurriculumFlow: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="schedule">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <ScheduleGrid
-              courses={curriculumData.courses.filter(course => !isCourseCompleted(course.id))}
-              schedule={schedule}
-              onRemoveCourse={(day, time) => {
-                const course = schedule[day]?.[time];
-                if (course) {
-                  handleRemoveCourse(course);
-                }
-              }}
-            />
-            <CourseList 
-              courses={curriculumData.courses}
-              onToggleCompletion={toggleCourseCompletion}
-              showCheckbox={true}
-              hideCompleted={true}
-              schedule={schedule}
-              onCheckboxChange={(course) => {
-                const isInSchedule = course.schedules?.some(({ day, time }) => 
-                  schedule[day]?.[time]?.id === course.id
-                );
+          <div className="grid grid-cols-1 lg:grid-cols-[800px,1fr] gap-4">
+            <div className="bg-white rounded-lg p-4 shadow-sm max-h-[600px] overflow-hidden">
+              <ScheduleGrid
+                courses={curriculumData.courses.filter(course => !isCourseCompleted(course.id))}
+                schedule={schedule}
+                onRemoveCourse={(day, time) => {
+                  const course = schedule[day]?.[time];
+                  if (course) {
+                    handleRemoveCourse(course);
+                  }
+                }}
+              />
+            </div>
+            <div className="bg-white rounded-lg p-4 shadow-sm max-h-[600px] overflow-y-auto">
+              <CourseList 
+                courses={curriculumData.courses}
+                onToggleCompletion={toggleCourseCompletion}
+                showCheckbox={true}
+                hideCompleted={true}
+                schedule={schedule}
+                onCheckboxChange={(course) => {
+                  const isInSchedule = course.schedules?.some(({ day, time }) => 
+                    schedule[day]?.[time]?.id === course.id
+                  );
 
-                if (isInSchedule) {
-                  handleRemoveCourse(course);
-                } else {
-                  handleAddCourse(course);
-                }
-              }}
-            />
+                  if (isInSchedule) {
+                    handleRemoveCourse(course);
+                  } else {
+                    handleAddCourse(course);
+                  }
+                }}
+              />
+            </div>
           </div>
         </TabsContent>
 

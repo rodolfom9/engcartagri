@@ -185,12 +185,22 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
       
       // Atualizar horários apenas se todos os campos estiverem preenchidos
       if (updatedCourse.schedules && scheduleCount > 0) {
+        console.log('Validando horários antes do salvamento:', updatedCourse.schedules);
+        
         const validSchedules = updatedCourse.schedules
           .slice(0, scheduleCount)
-          .filter(schedule => schedule && schedule.day && schedule.time);
+          .filter(schedule => {
+            const isValid = schedule && schedule.day && schedule.time;
+            if (!isValid) {
+              console.log('Horário inválido encontrado:', schedule);
+            }
+            return isValid;
+          });
         
+        console.log('Horários válidos após filtro:', validSchedules);
         updatedCourse.schedules = validSchedules.length > 0 ? validSchedules : [];
       } else {
+        console.log('Nenhum horário para validar');
         updatedCourse.schedules = [];
       }
       

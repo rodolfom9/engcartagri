@@ -69,6 +69,9 @@ export const loadCurriculumDataFromSupabase = async (): Promise<CurriculumData> 
   if (schedulesError) {
     console.error('Erro ao carregar horários:', schedulesError);
   } else if (schedules) {
+    console.log('=== CARREGANDO HORÁRIOS ===');
+    console.log('Horários encontrados:', schedules);
+    
     // Adicionar horários às disciplinas
     courses.forEach((course: any) => {
       // Buscar o registro de horário correspondente a esta disciplina
@@ -77,6 +80,7 @@ export const loadCurriculumDataFromSupabase = async (): Promise<CurriculumData> 
       );
       
       if (courseSchedule) {
+        console.log(`Processando horários para disciplina ${course.id}:`, courseSchedule);
         // Converter o formato da tabela para o formato usado no front-end
         const scheduleArray = [];
         
@@ -105,11 +109,14 @@ export const loadCurriculumDataFromSupabase = async (): Promise<CurriculumData> 
         // Atribuir os horários à disciplina apenas se houver horários válidos
         if (scheduleArray.length > 0) {
           course.schedules = scheduleArray;
+          console.log(`Horários atribuídos à disciplina ${course.id}:`, scheduleArray);
         } else {
           course.schedules = undefined;
+          console.log(`Nenhum horário válido encontrado para disciplina ${course.id}`);
         }
       } else {
         course.schedules = undefined;
+        console.log(`Nenhum registro de horário encontrado para disciplina ${course.id}`);
       }
     });
   }
