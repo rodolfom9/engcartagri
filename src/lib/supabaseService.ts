@@ -2,6 +2,14 @@ import { supabase } from '../integrations/supabase/client';
 import { Course, Prerequisite, CurriculumData } from '../types/curriculum';
 import { defaultCurriculumData } from '../data/courses';
 
+// Função para gerar UUID v4 caso crypto.randomUUID não esteja disponível
+function uuidv4() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 // Carregar dados do currículo do Supabase
 export const loadCurriculumDataFromSupabase = async (): Promise<CurriculumData> => {
   // Carregar disciplinas
@@ -38,7 +46,8 @@ export const loadCurriculumDataFromSupabase = async (): Promise<CurriculumData> 
       courses: courses as Course[],
       prerequisites: prerequisites.map((prereq: any) => ({
         from: prereq.from_disciplina,
-        to: prereq.to_disciplina
+        to: prereq.to_disciplina,
+        tipo: prereq.tipo ?? 1
       })),
       completedCourses: []
     };
@@ -104,7 +113,8 @@ export const loadCurriculumDataFromSupabase = async (): Promise<CurriculumData> 
     })) as Course[],
     prerequisites: prerequisites.map((prereq: any) => ({
       from: prereq.from_disciplina,
-      to: prereq.to_disciplina
+      to: prereq.to_disciplina,
+      tipo: prereq.tipo ?? 1
     })),
     completedCourses: completedCourses.map((item: any) => item.disciplina_id)
   };
@@ -239,7 +249,7 @@ export const saveCourseToSupabase = async (course: Course): Promise<boolean> => 
         time2: course.schedules[1]?.time || null,
         day3: course.schedules[2]?.day || null,
         time3: course.schedules[2]?.time || null,
-        id: crypto.randomUUID() // Adicionar UUID para a chave primária
+        id: uuidv4() // Adicionar UUID para a chave primária
       };
 
       // Inserir novos horários
@@ -249,17 +259,6 @@ export const saveCourseToSupabase = async (course: Course): Promise<boolean> => 
 
       if (insertSchedulesError) {
         console.error('Erro ao inserir horários:', insertSchedulesError);
-        return false;
-      }
-    } else {
-      // Se não houver horários, remover registros existentes
-      const { error: deleteSchedulesError } = await supabase
-        .from('horarios')
-        .delete()
-        .eq('disciplina_id', course.id);
-
-      if (deleteSchedulesError) {
-        console.error('Erro ao limpar horários:', deleteSchedulesError);
         return false;
       }
     }

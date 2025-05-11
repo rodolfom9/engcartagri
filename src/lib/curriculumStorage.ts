@@ -116,7 +116,7 @@ export const loadCurriculumDataAsync = async (): Promise<CurriculumData> => {
     // Fetch prerequisites
     const { data: prerequisites, error: prerequisitesError } = await supabase
       .from('prerequisitos')
-      .select('*');
+      .select('from_disciplina, to_disciplina, tipo');
 
     if (prerequisitesError) throw prerequisitesError;
 
@@ -164,10 +164,14 @@ export const loadCurriculumDataAsync = async (): Promise<CurriculumData> => {
       };
     });
 
-    const mappedPrerequisites = prerequisites.map(prereq => ({
-      from: prereq.from_disciplina,
-      to: prereq.to_disciplina
-    }));
+    let mappedPrerequisites: Prerequisite[] = [];
+    if (Array.isArray(prerequisites)) {
+      mappedPrerequisites = prerequisites.map((prereq: any) => ({
+        from: prereq.from_disciplina,
+        to: prereq.to_disciplina,
+        tipo: prereq.tipo ?? 1
+      }));
+    }
 
     const mappedCompletedCourses = completedCourses.map(c => c.disciplina_id);
 
@@ -304,13 +308,14 @@ export const addPrerequisite = async (from: string, to: string, tipo: number = 1
       
       // Add to Supabase if user is authenticated
       if (userData?.session?.user) {
+        const insertObj: any = {
+          from_disciplina: from,
+          to_disciplina: to
+        };
+        if (typeof tipo !== 'undefined') insertObj.tipo = tipo;
         const { error } = await supabase
           .from('prerequisitos')
-          .insert({
-            from_disciplina: from,
-            to_disciplina: to,
-            tipo
-          });
+          .insert(insertObj);
         
         if (error) throw error;
       }
@@ -555,9 +560,11 @@ export const updatePrerequisiteType = async (from: string, to: string, tipo: num
     
     // Atualizar no Supabase se o usuário estiver autenticado
     if (userData?.session?.user) {
+      const updateObj: any = {};
+      if (typeof tipo !== 'undefined') updateObj.tipo = tipo;
       const { error } = await supabase
         .from('prerequisitos')
-        .update({ tipo })
+        .update(updateObj)
         .eq('from_disciplina', from)
         .eq('to_disciplina', to);
       

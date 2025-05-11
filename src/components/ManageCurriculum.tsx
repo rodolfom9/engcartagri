@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -384,7 +384,7 @@ const ManageCurriculum: React.FC<ManageCurriculumProps> = ({ onDataChange }) => 
 
       {/* Dialog for editing prerequisite type */}
       <Dialog open={editPrerequisiteDialogOpen} onOpenChange={setEditPrerequisiteDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Editar Tipo de Pré-requisito</DialogTitle>
             <DialogDescription>
@@ -398,21 +398,31 @@ const ManageCurriculum: React.FC<ManageCurriculumProps> = ({ onDataChange }) => 
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4 py-4">
-            <Select
-              value={editingPrerequisite?.tipo.toString()}
-              onValueChange={(value) => handleUpdatePrerequisiteType(parseInt(value))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">Pré-requisito</SelectItem>
-                <SelectItem value="2">Có-requisito</SelectItem>
-                <SelectItem value="3">Pré-requisito flexível</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              {editingPrerequisite && (
+                <Select
+                  defaultValue={String(editingPrerequisite.tipo)}
+                  onValueChange={(value) => handleUpdatePrerequisiteType(parseInt(value))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">Pré-requisito</SelectItem>
+                    <SelectItem value="2">Có-requisito</SelectItem>
+                    <SelectItem value="3">Pré-requisito flexível</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
           </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditPrerequisiteDialogOpen(false)}>
+              Cancelar
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
