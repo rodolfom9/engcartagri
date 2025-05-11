@@ -86,7 +86,7 @@ export type Database = {
           day1: string | null
           day2: string | null
           day3: string | null
-          disciplina_id: string | null
+          disciplina_id: string
           id: string
           time1: string | null
           time2: string | null
@@ -97,7 +97,7 @@ export type Database = {
           day1?: string | null
           day2?: string | null
           day3?: string | null
-          disciplina_id?: string | null
+          disciplina_id: string
           id?: string
           time1?: string | null
           time2?: string | null
@@ -108,7 +108,7 @@ export type Database = {
           day1?: string | null
           day2?: string | null
           day3?: string | null
-          disciplina_id?: string | null
+          disciplina_id?: string
           id?: string
           time1?: string | null
           time2?: string | null
@@ -168,10 +168,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      update_discipline_id: {
-        Args: { old_id: string; new_id: string }
-        Returns: undefined
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
