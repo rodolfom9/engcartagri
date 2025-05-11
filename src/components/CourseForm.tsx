@@ -189,6 +189,11 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
       // Ensure the schedules array is properly set up based on scheduleCount
       const updatedCourse = { ...course };
       
+      // Se estiver editando e o ID mudou, incluir o ID antigo
+      if (isEditing && initialCourse && initialCourse.id !== updatedCourse.id) {
+        updatedCourse.oldId = initialCourse.id;
+      }
+      
       // Trim schedules array to match the scheduleCount
       if (updatedCourse.schedules && scheduleCount > 0) {
         updatedCourse.schedules = updatedCourse.schedules.slice(0, scheduleCount);

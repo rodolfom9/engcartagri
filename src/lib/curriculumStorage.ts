@@ -170,24 +170,77 @@ export const addCourse = async (course: Course): Promise<CurriculumData> => {
 
 // Update an existing course
 export const updateCourse = async (courseId: string, updatedCourse: Course): Promise<CurriculumData> => {
-  // Update in localStorage
-  const data = loadCurriculumData();
-  const index = data.courses.findIndex(c => c.id === courseId);
+  console.log('=== INICIANDO PROCESSO DE ATUALIZAÇÃO ===');
+  console.log('Dados recebidos:', {
+    courseId,
+    updatedCourse
+  });
   
-  if (index !== -1) {
-    data.courses[index] = updatedCourse;
+  try {
+    // Se o ID mudou, incluir o oldId antes de qualquer operação
+    if (courseId !== updatedCourse.id) {
+      console.log('Detectada mudança de ID:', {
+        oldId: courseId,
+        newId: updatedCourse.id
+      });
+      updatedCourse.oldId = courseId;
+    }
+
+    // Verificar se a disciplina existe no Supabase usando o ID correto
+    const { data: existingCourse, error: checkError } = await supabase
+      .from('disciplinas')
+      .select('*')
+      .eq('id', updatedCourse.oldId || courseId)
+      .single();
+
+    console.log('Disciplina existente no Supabase:', existingCourse);
+    
+    if (checkError) {
+      console.error('Erro ao verificar disciplina:', checkError);
+      throw new Error('Erro ao verificar disciplina no Supabase');
+    }
+
+    if (!existingCourse) {
+      console.error('Disciplina não encontrada no Supabase:', courseId);
+      throw new Error('Disciplina não encontrada no Supabase');
+    }
+
+    // Update in localStorage
+    const data = loadCurriculumData();
+    const index = data.courses.findIndex(c => c.id === courseId);
+    
+    console.log('Índice encontrado no localStorage:', index);
+    
+    // Atualizar no localStorage
+    if (index !== -1) {
+      data.courses[index] = updatedCourse;
+    } else {
+      console.warn('Disciplina não encontrada no localStorage, adicionando como nova');
+      data.courses.push(updatedCourse);
+    }
     saveCurriculumData(data);
     
-    try {
-      console.log('Updating course with schedules:', updatedCourse);
-      // Use the saveCourseToSupabase function which handles schedules properly
-      await saveCourseToSupabase(updatedCourse);
-    } catch (error) {
-      console.error('Error updating course in Supabase:', error);
+    console.log('Enviando atualização para o Supabase:', {
+      oldId: courseId,
+      newId: updatedCourse.id,
+      course: updatedCourse
+    });
+    
+    // Use the saveCourseToSupabase function which handles schedules properly
+    const success = await saveCourseToSupabase(updatedCourse);
+    
+    console.log('Resultado do salvamento:', success);
+    
+    if (!success) {
+      console.error('Erro ao atualizar disciplina no Supabase');
+      throw new Error('Erro ao atualizar disciplina no Supabase');
     }
+
+    return data;
+  } catch (error) {
+    console.error('Error updating course:', error);
+    throw error;
   }
-  
-  return data;
 };
 
 // Delete a course

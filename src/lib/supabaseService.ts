@@ -131,6 +131,8 @@ export const loadCurriculumDataFromSupabase = async (): Promise<CurriculumData> 
 // Salvar disciplina no Supabase
 export const saveCourseToSupabase = async (course: Course): Promise<boolean> => {
   try {
+    console.log('=== INÍCIO DO PROCESSO DE SALVAMENTO ===');
+    
     // Get the current authenticated user
     const { data: userData } = await supabase.auth.getSession();
     
@@ -139,23 +141,23 @@ export const saveCourseToSupabase = async (course: Course): Promise<boolean> => 
       return false;
     }
 
-    console.log('Tentando salvar disciplina com professor:', course.professor);
+    console.log('Dados recebidos:', { 
+      id: course.id,
+      oldId: course.oldId,
+      name: course.name,
+      schedules: course.schedules,
+      type: course.type,
+      period: course.period,
+      row: course.row,
+      hours: course.hours,
+      credits: course.credits,
+      professor: course.professor
+    });
+    
     const now = new Date().toISOString();
 
     // Preparar dados da disciplina
-    const courseData: {
-      id: string;
-      name: string;
-      period: number;
-      row: number;
-      hours: string;
-      type: Course['type'];
-      credits: number;
-      professor: string | null;
-      user_id: string;
-      updated_at: string;
-      created_at?: string;
-    } = {
+    const courseData = {
       id: course.id,
       name: course.name,
       period: course.period,
@@ -165,103 +167,156 @@ export const saveCourseToSupabase = async (course: Course): Promise<boolean> => 
       credits: course.credits,
       professor: course.professor || null,
       user_id: userData.session.user.id,
-      updated_at: now
+      updated_at: now,
+      created_at: now
     };
 
-    console.log('Dados preparados para salvar:', courseData);
+    console.log('Dados preparados para salvamento:', courseData);
 
-    // Verificar se a disciplina já existe
-    const { data: existingCourse, error: checkError } = await supabase
-      .from('disciplinas')
-      .select('id, user_id, professor')
-      .eq('id', course.id)
-      .single();
-
-    console.log('Disciplina existente:', existingCourse);
-
-    if (existingCourse) {
-      // Atualizar todos os dados, incluindo nome
-      console.log('Atualizando disciplina existente...');
-      const { data: updateData, error: updateError } = await supabase
+    // Se temos um oldId, significa que estamos atualizando o ID da disciplina
+    if (course.oldId && course.oldId !== course.id) {
+      console.log('=== INICIANDO PROCESSO DE ATUALIZAÇÃO DE ID ===');
+      
+      // Primeiro verificar se o novo ID já existe
+      const { data: existingWithNewId, error: checkError } = await supabase
         .from('disciplinas')
-        .update({
-          id: courseData.id, // Permitir atualização do ID
-          name: courseData.name,
-          period: courseData.period,
-          row: courseData.row,
-          hours: courseData.hours,
-          type: courseData.type,
-          credits: courseData.credits,
-          professor: courseData.professor,
-          updated_at: courseData.updated_at,
-          user_id: courseData.user_id
-        })
+        .select('id')
         .eq('id', course.id)
-        .select();
+        .single();
 
-      console.log('Resultado da atualização:', { data: updateData, error: updateError });
-
-      if (updateError) {
-        console.error('Erro ao atualizar disciplina:', updateError);
+      if (existingWithNewId) {
+        console.error('Já existe uma disciplina com o novo ID:', course.id);
         return false;
       }
-    } else {
-      // Se não existir, inserir
-      console.log('Inserindo nova disciplina...');
-      courseData.created_at = now;
-      const { data: insertData, error: insertError } = await supabase
-        .from('disciplinas')
-        .insert([courseData])
-        .select();
 
-      console.log('Resultado da inserção:', { data: insertData, error: insertError });
+      // Primeiro criar a nova entrada com o novo ID
+      console.log('Criando nova entrada com o novo ID...');
+      const { error: insertError } = await supabase
+        .from('disciplinas')
+        .insert(courseData);
 
       if (insertError) {
-        console.error('Erro ao inserir disciplina:', insertError);
+        console.error('Erro ao criar nova entrada:', insertError);
         return false;
       }
-    }
 
-    // Tratar os horários
-    if (course.schedules && course.schedules.length > 0) {
-      // Primeiro, excluir horários existentes
-      const { error: deleteSchedulesError } = await supabase
-        .from('horarios')
+      // Atualizar referências
+      console.log('Iniciando atualização de referências...');
+      const updatePromises = [];
+
+      // Atualizar horários
+      updatePromises.push(
+        supabase
+          .from('horarios')
+          .update({ disciplina_id: course.id })
+          .eq('disciplina_id', course.oldId)
+      );
+
+      // Atualizar pré-requisitos (from)
+      updatePromises.push(
+        supabase
+          .from('prerequisitos')
+          .update({ from_disciplina: course.id })
+          .eq('from_disciplina', course.oldId)
+      );
+
+      // Atualizar pré-requisitos (to)
+      updatePromises.push(
+        supabase
+          .from('prerequisitos')
+          .update({ to_disciplina: course.id })
+          .eq('to_disciplina', course.oldId)
+      );
+
+      // Atualizar disciplinas concluídas
+      updatePromises.push(
+        supabase
+          .from('disciplinas_concluidas')
+          .update({ disciplina_id: course.id })
+          .eq('disciplina_id', course.oldId)
+      );
+
+      // Executar todas as atualizações de referência
+      const results = await Promise.all(updatePromises);
+      const errors = results.filter(r => r.error).map(r => r.error);
+      
+      if (errors.length > 0) {
+        console.error('Erros ao atualizar referências:', errors);
+        return false;
+      }
+
+      // Por fim, excluir a entrada antiga
+      console.log('Excluindo entrada antiga...');
+      const { error: deleteError } = await supabase
+        .from('disciplinas')
         .delete()
-        .eq('disciplina_id', course.id);
+        .eq('id', course.oldId);
 
-      if (deleteSchedulesError) {
-        console.error('Erro ao excluir horários existentes:', deleteSchedulesError);
+      if (deleteError) {
+        console.error('Erro ao excluir entrada antiga:', deleteError);
         return false;
       }
 
-      // Preparar dados dos horários
-      const schedulesData = {
-        disciplina_id: course.id,
-        created_at: now,
-        day1: course.schedules[0]?.day || null,
-        time1: course.schedules[0]?.time || null,
-        day2: course.schedules[1]?.day || null,
-        time2: course.schedules[1]?.time || null,
-        day3: course.schedules[2]?.day || null,
-        time3: course.schedules[2]?.time || null,
-        id: uuidv4() // Adicionar UUID para a chave primária
-      };
+      console.log('Atualização de ID concluída com sucesso');
+      return true;
+    } else {
+      console.log('=== REALIZANDO ATUALIZAÇÃO NORMAL ===');
+      // Atualização normal sem mudança de ID
+      const { error: upsertError } = await supabase
+        .from('disciplinas')
+        .upsert(courseData)
+        .select();
 
-      // Inserir novos horários
-      const { error: insertSchedulesError } = await supabase
-        .from('horarios')
-        .insert([schedulesData]);
-
-      if (insertSchedulesError) {
-        console.error('Erro ao inserir horários:', insertSchedulesError);
+      if (upsertError) {
+        console.error('Erro ao atualizar/inserir disciplina:', upsertError);
         return false;
+      }
+
+      // Tratar os horários apenas se não for uma atualização de ID
+      if (course.schedules && course.schedules.length > 0) {
+        console.log('=== ATUALIZANDO HORÁRIOS ===');
+        
+        // Primeiro, excluir horários existentes
+        const { error: deleteSchedulesError } = await supabase
+          .from('horarios')
+          .delete()
+          .eq('disciplina_id', course.id);
+
+        if (deleteSchedulesError) {
+          console.error('Erro ao excluir horários existentes:', deleteSchedulesError);
+          return false;
+        }
+
+        // Preparar dados dos horários no formato correto da tabela
+        const scheduleData = {
+          disciplina_id: course.id,
+          created_at: now,
+          day1: course.schedules[0]?.day || null,
+          time1: course.schedules[0]?.time || null,
+          day2: course.schedules[1]?.day || null,
+          time2: course.schedules[1]?.time || null,
+          day3: course.schedules[2]?.day || null,
+          time3: course.schedules[2]?.time || null,
+          id: uuidv4()
+        };
+
+        console.log('Inserindo novos horários:', scheduleData);
+
+        // Inserir novos horários
+        const { error: insertSchedulesError } = await supabase
+          .from('horarios')
+          .insert([scheduleData]);
+
+        if (insertSchedulesError) {
+          console.error('Erro ao inserir horários:', insertSchedulesError);
+          return false;
+        }
       }
     }
 
     return true;
   } catch (error) {
-    console.error('Erro geral ao salvar disciplina:', error);
+    console.error('Erro não tratado ao salvar disciplina:', error);
     return false;
   }
 };

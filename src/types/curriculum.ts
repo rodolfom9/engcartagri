@@ -9,6 +9,7 @@ export interface Course {
   type: CourseType;
   credits: number;
   professor?: string;
+  oldId?: string; // ID anterior da disciplina, usado durante atualizações
   schedules?: {
     day: string;
     time: string;
