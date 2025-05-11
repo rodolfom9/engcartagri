@@ -471,11 +471,25 @@ const CurriculumFlow: React.FC = () => {
                 <h3 className="font-semibold mb-2">Pré-requisitos:</h3>
                 {getPrerequisites(selectedCourse.id).length > 0 ? (
                   <ul className="list-disc pl-5">
-                    {getPrerequisites(selectedCourse.id).map(prereq => (
-                      <li key={prereq.id} className={isCourseCompleted(prereq.id) ? 'text-green-600' : 'text-red-600'}>
-                        {prereq.name} {isCourseCompleted(prereq.id) ? '(Completo)' : '(Pendente)'}
-                      </li>
-                    ))}
+                    {getPrerequisites(selectedCourse.id).map(prereq => {
+                      // Encontrar o tipo do pré-requisito
+                      const prereqInfo = curriculumData.prerequisites.find(
+                        p => p.from === prereq.id && p.to === selectedCourse.id
+                      );
+                      const prereqType = prereqInfo?.tipo || 1;
+                      const prereqTypeName = 
+                        prereqType === 2 ? 'Có-requisito' : 
+                        prereqType === 3 ? 'Pré-requisito flexível' : 
+                        'Pré-requisito';
+                        
+                      return (
+                        <li key={prereq.id} 
+                            className={isCourseCompleted(prereq.id) ? 'text-green-600' : 'text-red-600'}>
+                          {prereq.name} - <span className="font-semibold">({prereqTypeName})</span>{' '}
+                          {isCourseCompleted(prereq.id) ? '(Completo)' : '(Pendente)'}
+                        </li>
+                      );
+                    })}
                   </ul>
                 ) : (
                   <p className="text-gray-500">Nenhum pré-requisito</p>

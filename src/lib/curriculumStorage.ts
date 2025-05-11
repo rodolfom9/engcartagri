@@ -546,6 +546,7 @@ export const isCourseCompleted = (courseId: string): boolean => {
 
 // Atualizar tipo de pré-requisito
 export const updatePrerequisiteType = async (from: string, to: string, tipo: number): Promise<CurriculumData> => {
+  console.log('[DEBUG] updatePrerequisiteType chamada:', { from, to, tipo });
   const data = loadCurriculumData();
   
   // Atualizar no estado local
@@ -553,6 +554,9 @@ export const updatePrerequisiteType = async (from: string, to: string, tipo: num
   if (prereq) {
     prereq.tipo = tipo;
     saveCurriculumData(data);
+    console.log('[DEBUG] Pré-requisito atualizado localmente:', prereq);
+  } else {
+    console.warn('[DEBUG] Pré-requisito não encontrado localmente:', { from, to });
   }
   
   try {
@@ -562,16 +566,23 @@ export const updatePrerequisiteType = async (from: string, to: string, tipo: num
     if (userData?.session?.user) {
       const updateObj: any = {};
       if (typeof tipo !== 'undefined') updateObj.tipo = tipo;
+      console.log('[DEBUG] Enviando update para Supabase:', updateObj);
       const { error } = await supabase
         .from('prerequisitos')
         .update(updateObj)
         .eq('from_disciplina', from)
         .eq('to_disciplina', to);
       
-      if (error) throw error;
+      if (error) {
+        console.error('[DEBUG] Erro ao atualizar tipo de pré-requisito no Supabase:', error);
+      } else {
+        console.log('[DEBUG] Update de tipo de pré-requisito realizado com sucesso no Supabase');
+      }
+    } else {
+      console.warn('[DEBUG] Usuário não autenticado, update não enviado ao Supabase');
     }
   } catch (error) {
-    console.error('Erro ao atualizar tipo de pré-requisito no Supabase:', error);
+    console.error('[DEBUG] Erro geral ao atualizar tipo de pré-requisito:', error);
   }
   
   return data;

@@ -223,6 +223,12 @@ const ManageCurriculum: React.FC<ManageCurriculumProps> = ({ onDataChange }) => 
   const handleUpdatePrerequisiteType = async (tipo: number) => {
     if (!editingPrerequisite) return;
 
+    console.log('[DEBUG] handleUpdatePrerequisiteType:', {
+      from: editingPrerequisite.from,
+      to: editingPrerequisite.to,
+      tipo
+    });
+
     try {
       await updatePrerequisiteType(editingPrerequisite.from, editingPrerequisite.to, tipo);
       loadAndSetData();
