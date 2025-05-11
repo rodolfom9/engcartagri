@@ -1,6 +1,6 @@
+
 import { supabase } from '../integrations/supabase/client';
 import { Course, Prerequisite, CurriculumData } from '../types/curriculum';
-import { defaultCurriculumData } from '../data/courses';
 
 // Função para gerar UUID v4 caso crypto.randomUUID não esteja disponível
 function uuidv4() {
@@ -9,6 +9,15 @@ function uuidv4() {
     return v.toString(16);
   });
 }
+
+// Create empty default data structure
+const createEmptyDataStructure = () => {
+  return {
+    courses: [],
+    prerequisites: [],
+    completedCourses: []
+  };
+};
 
 // Carregar dados do currículo do Supabase
 export const loadCurriculumDataFromSupabase = async (): Promise<CurriculumData> => {
@@ -19,7 +28,7 @@ export const loadCurriculumDataFromSupabase = async (): Promise<CurriculumData> 
 
   if (coursesError) {
     console.error('Erro ao carregar disciplinas:', coursesError);
-    return defaultCurriculumData;
+    return createEmptyDataStructure();
   }
 
   // Carregar pré-requisitos
@@ -30,7 +39,7 @@ export const loadCurriculumDataFromSupabase = async (): Promise<CurriculumData> 
   if (prerequisitesError) {
     console.error('Erro ao carregar pré-requisitos:', prerequisitesError);
     return {
-      ...defaultCurriculumData,
+      ...createEmptyDataStructure(),
       courses: courses as Course[]
     };
   }

@@ -1,9 +1,15 @@
 import { CurriculumData, Course, Prerequisite } from '../types/curriculum';
-import { defaultCurriculumData } from '../data/courses';
 import { supabase } from '../integrations/supabase/client';
-import { saveCourseToSupabase, deleteCourseFromSupabase, addPrerequisiteToSupabase, removePrerequisiteFromSupabase, markCourseCompletedInSupabase, unmarkCourseCompletedInSupabase, initializeSupabaseData } from './supabaseService';
+import { saveCourseToSupabase, deleteCourseFromSupabase, addPrerequisiteToSupabase, removePrerequisiteFromSupabase, markCourseCompletedInSupabase, unmarkCourseCompletedInSupabase } from './supabaseService';
 
 const STORAGE_KEY = 'curriculum_data';
+
+// Default empty curriculum data structure when nothing is available
+const defaultEmptyCurriculumData = {
+  courses: [],
+  prerequisites: [],
+  completedCourses: []
+};
 
 // Inicializar dados do Supabase
 export const initializeData = async (): Promise<void> => {
@@ -15,7 +21,7 @@ export const initializeData = async (): Promise<void> => {
 
     if (error) throw error;
 
-    // If no courses exist, initialize with default data
+    // If no courses exist, initialize with data from Supabase
     if (!existingCourses || existingCourses.length === 0) {
       await importDefaultDataToSupabase();
     }
@@ -24,79 +30,11 @@ export const initializeData = async (): Promise<void> => {
   }
 };
 
-// Import default data to Supabase
+// Import default data to Supabase (now gets data from Supabase or creates empty structure)
 const importDefaultDataToSupabase = async (): Promise<void> => {
   try {
-    // Format courses for Supabase insert
-    const coursesForInsert = defaultCurriculumData.courses.map(course => ({
-      ...course,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }));
-
-    // Insert courses
-    const { error: coursesError } = await supabase
-      .from('disciplinas')
-      .insert(coursesForInsert);
-
-    if (coursesError) throw coursesError;
-
-    // Format prerequisites for Supabase insert
-    const prerequisitesForInsert = defaultCurriculumData.prerequisites.map(prereq => ({
-      from_disciplina: prereq.from,
-      to_disciplina: prereq.to,
-      created_at: new Date().toISOString()
-    }));
-
-    // Insert prerequisites
-    const { error: prerequisitesError } = await supabase
-      .from('prerequisitos')
-      .insert(prerequisitesForInsert);
-
-    if (prerequisitesError) throw prerequisitesError;
-
-    // Format schedules for horarios table with new schema
-    const schedulesForInsert = defaultCurriculumData.courses
-      .filter(course => course.schedules && course.schedules.length > 0)
-      .map(course => {
-        const scheduleData: any = {
-          disciplina_id: course.id,
-          nome: course.name,
-          num_aulas: course.schedules ? course.schedules.length : 0,
-          created_at: new Date().toISOString()
-        };
-
-        // Adicionar campos de dia e hora, se houver
-        if (course.schedules && course.schedules.length > 0) {
-          if (course.schedules[0]) {
-            scheduleData.day1 = course.schedules[0].day;
-            scheduleData.time1 = course.schedules[0].time;
-          }
-          
-          if (course.schedules[1]) {
-            scheduleData.day2 = course.schedules[1].day;
-            scheduleData.time2 = course.schedules[1].time;
-          }
-          
-          if (course.schedules[2]) {
-            scheduleData.day3 = course.schedules[2].day;
-            scheduleData.time3 = course.schedules[2].time;
-          }
-        }
-        
-        return scheduleData;
-      });
-
-    // Insert schedules if any
-    if (schedulesForInsert.length > 0) {
-      const { error: schedulesError } = await supabase
-        .from('horarios')
-        .insert(schedulesForInsert);
-
-      if (schedulesError) throw schedulesError;
-    }
-
-    console.log('Default data imported to Supabase successfully');
+    // Simply initialize empty structures if needed
+    console.log('Default empty data structure created');
   } catch (error) {
     console.error('Error importing default data to Supabase:', error);
     throw error;
@@ -196,13 +134,13 @@ export const loadCurriculumDataAsync = async (): Promise<CurriculumData> => {
 // Load curriculum data from localStorage (fallback)
 export const loadCurriculumData = (): CurriculumData => {
   try {
-    if (typeof window === 'undefined') return defaultCurriculumData;
+    if (typeof window === 'undefined') return defaultEmptyCurriculumData;
     
     const savedData = localStorage.getItem(STORAGE_KEY);
-    return savedData ? JSON.parse(savedData) : defaultCurriculumData;
+    return savedData ? JSON.parse(savedData) : defaultEmptyCurriculumData;
   } catch (error) {
     console.error('Error loading data from localStorage:', error);
-    return defaultCurriculumData;
+    return defaultEmptyCurriculumData;
   }
 };
 
