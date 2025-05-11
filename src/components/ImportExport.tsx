@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -62,6 +63,7 @@ const ImportExport: React.FC<ImportExportProps> = ({ onImport }) => {
         description: "O fluxo curricular foi salvo como PDF"
       });
     } catch (error) {
+      console.error("Erro ao exportar PDF:", error);
       toast({
         title: "Erro ao exportar PDF",
         description: "Não foi possível gerar o PDF. Tente novamente.",
@@ -99,6 +101,7 @@ const ImportExport: React.FC<ImportExportProps> = ({ onImport }) => {
         });
       }
     } catch (error) {
+      console.error("Erro na importação:", error);
       toast({
         title: "Falha na importação",
         description: "O formato dos dados é inválido. Verifique e tente novamente.",
@@ -113,7 +116,7 @@ const ImportExport: React.FC<ImportExportProps> = ({ onImport }) => {
         <CardTitle>Importar/Exportar Dados do Currículo</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex space-x-4">
+        <div className="flex flex-col md:flex-row gap-2 md:space-x-4">
           <Button onClick={handleExport} className="flex-1">Exportar JSON</Button>
           <Button onClick={handleExportPDF} className="flex-1">Exportar PDF</Button>
           <Button onClick={handleImport} disabled={!importData} className="flex-1">Importar</Button>
