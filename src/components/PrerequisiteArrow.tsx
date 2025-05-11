@@ -14,6 +14,7 @@ interface PrerequisiteArrowProps {
   rowDifference?: number;      // Diferença entre as linhas (opcional)
   boxWidth: number;            // Largura da caixa da disciplina
   tipo?: number;               // 1: Pré-requisito, 2: Có-requisito, 3: Pré-requisito flexível
+  allBoxes?: { left: number, top: number, width: number, height: number }[]; // Todas as caixas para desvio inteligente
 }
 
 /**
@@ -26,7 +27,8 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
   isDirectConnection,
   rowDifference = 0,
   boxWidth,
-  tipo = 1
+  tipo = 1,
+  allBoxes = []
 }) => {
   // Determinar a cor da seta baseado no tipo
   const getArrowColor = () => {
@@ -52,11 +54,45 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
   // Raio para os cantos arredondados (estilo Lucidchart)
   const cornerRadius = 10;
   
+  // Função utilitária para detectar colisão entre um segmento e uma caixa
+  function segmentIntersectsBox(x1: number, y1: number, x2: number, y2: number, box: {left: number, top: number, width: number, height: number}) {
+    // Checa se o segmento cruza o retângulo da caixa
+    const boxLeft = box.left;
+    const boxRight = box.left + box.width;
+    const boxTop = box.top;
+    const boxBottom = box.top + box.height;
+    // Segmento completamente à esquerda/direita/acima/abaixo
+    if ((x1 < boxLeft && x2 < boxLeft) || (x1 > boxRight && x2 > boxRight) || (y1 < boxTop && y2 < boxTop) || (y1 > boxBottom && y2 > boxBottom)) {
+      return false;
+    }
+    // Para simplificação, só checa se cruza a área da caixa (não precisa ser perfeito)
+    // Checa se algum ponto está dentro
+    if ((x1 >= boxLeft && x1 <= boxRight && y1 >= boxTop && y1 <= boxBottom) ||
+        (x2 >= boxLeft && x2 <= boxRight && y2 >= boxTop && y2 <= boxBottom)) {
+      return true;
+    }
+    // Pode adicionar checagem de interseção mais precisa se necessário
+    return false;
+  }
+  
   // Gerar caminho ortogonal com cantos arredondados (estilo Lucidchart)
   const generatePathData = () => {
     // Para conexão direta, usar linha reta
     if (isDirectConnection) {
-      return `M ${startX} ${startY} L ${endX} ${endY}`;
+      // Checa colisão com caixas
+      let collision = false;
+      for (const box of allBoxes) {
+        if (segmentIntersectsBox(startX, startY, endX, endY, box)) {
+          collision = true;
+          break;
+        }
+      }
+      if (!collision) {
+        return `M ${startX} ${startY} L ${endX} ${endY}`;
+      }
+      // Se colidir, faz um desvio simples (pode ser melhorado)
+      const offset = 30;
+      return `M ${startX} ${startY} L ${startX + offset} ${startY} L ${startX + offset} ${endY} L ${endX} ${endY}`;
     }
     
     // Para conexões entre linhas diferentes, criar um caminho ortogonal

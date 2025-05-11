@@ -259,6 +259,62 @@ const OrthogonalEdge: React.FC<EdgeProps> = ({
     ];
   }
   
+  if (data?.isCalculusToGeodesyConnection) {
+    // Ajuste os valores conforme necessário para o layout do seu grafo
+    const initialExtend = 40;
+    const firstUp = 60;
+    const secondExtend = targetX - (sourceX + initialExtend);
+    const secondUp = sourceY - 80; // Ajuste a altura conforme necessário
+
+    pathPoints = [
+      { x: sourceX, y: sourceY }, // Ponto inicial
+      { x: sourceX + initialExtend, y: sourceY }, // Vai reto para a direita
+      { x: sourceX + initialExtend, y: sourceY - firstUp }, // Sobe
+      { x: targetX - initialExtend, y: sourceY - firstUp }, // Vai para a direita até próximo do destino
+      { x: targetX - initialExtend, y: targetY }, // Sobe
+      { x: targetX, y: targetY } // Ponto final
+    ];
+  }
+  
+  if (data?.isCalculusToGeodesy2Connection) {
+    // Ajuste os valores conforme necessário para o layout do seu grafo
+    const periodoWidth = 230; // mesmo valor usado para calcular x dos nós
+    const rowHeight = 150;    // mesmo valor usado para calcular y dos nós
+
+    // Ponto inicial
+    const startX = sourceX;
+    const startY = sourceY;
+
+    // 1. Vai reto para a direita (até o fim do nó)
+    const right1X = startX + 40;
+    const right1Y = startY;
+
+    // 2. Desce (um pouco, para não colidir com o nó)
+    const down1X = right1X;
+    const down1Y = startY + 60;
+
+    // 3. Vai para a direita 1 período
+    const right2X = right1X + periodoWidth;
+    const right2Y = down1Y;
+
+    // 4. Desce até a row 7
+    const row7Y = (7 - 1) * rowHeight + 50; // 50 é um ajuste para alinhar ao centro do nó
+
+    // 5. Direita até o destino
+    const finalX = targetX;
+    const finalY = targetY;
+
+    pathPoints = [
+      { x: startX, y: startY },         // Ponto inicial
+      { x: right1X, y: right1Y },       // Vai reto para a direita
+      { x: down1X, y: down1Y },         // Desce
+      { x: right2X, y: right2Y },       // Vai para a direita 1 período
+      { x: right2X, y: row7Y },         // Desce até a row 7
+      { x: finalX, y: row7Y },          // Direita até alinhar com o destino
+      { x: finalX, y: finalY }          // Ponto final
+    ];
+  }
+  
   // Construir o SVG path a partir dos pontos
   const pathString = pathPoints.reduce((path, point, index) => {
     if (index === 0) {
@@ -372,6 +428,12 @@ const CurriculumFlowGraph: React.FC<CurriculumFlowGraphProps> = ({
     const isTopographyConnection = 
       prereq.from === topographyCourseId && 
       prereq.to === specialSurveysCourseId;
+
+    const isCalculusToGeodesyConnection =
+      prereq.from === 'DPAA-2.0024' && prereq.to === 'DPAA-3.0077';
+
+    const isCalculusToGeodesy2Connection =
+      prereq.from === 'DPAA-2.0024' && prereq.to === 'DPAA-2.0195';
     
     return {
       id: `${prereq.from}-${prereq.to}`,
@@ -391,6 +453,8 @@ const CurriculumFlowGraph: React.FC<CurriculumFlowGraphProps> = ({
       data: {
         isElectroConnection,
         isTopographyConnection,
+        isCalculusToGeodesyConnection,
+        isCalculusToGeodesy2Connection,
         showControlPoints: false, // Definir como true para debugging
         fromName: courses.find(c => c.id === prereq.from)?.name,
         toName: courses.find(c => c.id === prereq.to)?.name,
