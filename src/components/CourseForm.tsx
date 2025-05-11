@@ -146,17 +146,6 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
       newErrors.professor = "O nome do professor deve ter pelo menos 3 caracteres";
     }
     
-    // Schedule validation
-    if (scheduleCount > 0) {
-      const schedules = course.schedules || [];
-      for (let i = 0; i < scheduleCount; i++) {
-        const schedule = schedules[i];
-        if (!schedule || !schedule.day || !schedule.time) {
-          newErrors[`schedule-${i}`] = "Horário incompleto";
-        }
-      }
-    }
-    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -194,9 +183,15 @@ const CourseForm: React.FC<CourseFormProps> = ({ initialCourse, onSave, onCancel
         updatedCourse.oldId = initialCourse.id;
       }
       
-      // Trim schedules array to match the scheduleCount
+      // Atualizar horários apenas se todos os campos estiverem preenchidos
       if (updatedCourse.schedules && scheduleCount > 0) {
-        updatedCourse.schedules = updatedCourse.schedules.slice(0, scheduleCount);
+        const validSchedules = updatedCourse.schedules
+          .slice(0, scheduleCount)
+          .filter(schedule => schedule && schedule.day && schedule.time);
+        
+        updatedCourse.schedules = validSchedules.length > 0 ? validSchedules : [];
+      } else {
+        updatedCourse.schedules = [];
       }
       
       console.log('Submitting course with schedules:', updatedCourse);
