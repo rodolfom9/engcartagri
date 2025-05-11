@@ -329,6 +329,37 @@ const OrthogonalEdge: React.FC<EdgeProps> = ({
     ];
   }
   
+  if (data?.isGeodesiaToGeometricaConnection) {
+    const periodoWidth = 230;
+    const rowHeight = 150;
+
+    const startX = sourceX;
+    const startY = sourceY;
+
+    const right1X = startX + 40;
+    const right1Y = startY;
+
+    const up1X = right1X;
+    const up1Y = (4 - 1) * rowHeight + 120;
+
+    const right2X = (6 - 1) * periodoWidth + -40;
+    const right2Y = up1Y;
+
+    const up2X = right2X;
+    const up2Y = (2 - 1) * rowHeight + 50;
+
+    const finalX = targetX;
+
+    pathPoints = [
+      { x: startX, y: startY },
+      { x: right1X, y: right1Y },
+      { x: up1X, y: up1Y },
+      { x: right2X, y: right2Y },
+      { x: up2X, y: up2Y },
+      { x: finalX, y: up2Y },
+    ];
+  }
+  
   // Construir o SVG path a partir dos pontos
   const pathString = pathPoints.reduce((path, point, index) => {
     if (index === 0) {
@@ -449,6 +480,9 @@ const CurriculumFlowGraph: React.FC<CurriculumFlowGraphProps> = ({
     const isCalculusToGeodesy2Connection =
       prereq.from === 'DPAA-2.0024' && prereq.to === 'DPAA-2.0195';
 
+    const isGeodesiaToGeometricaConnection =
+      prereq.from === 'DPAA-3.0054' && prereq.to === 'DPAA-3.0077';
+
     // Definir cor da aresta conforme o tipo
     let edgeColor = '#EF4444'; // vermelho padrão (pré-requisito)
     if (prereq.tipo === 2) edgeColor = '#3B82F6'; // azul (co-requisito)
@@ -474,6 +508,7 @@ const CurriculumFlowGraph: React.FC<CurriculumFlowGraphProps> = ({
         isTopographyConnection,
         isCalculusToGeodesyConnection,
         isCalculusToGeodesy2Connection,
+        isGeodesiaToGeometricaConnection,
         showControlPoints: false, // Definir como true para debugging
         fromName: courses.find(c => c.id === prereq.from)?.name,
         toName: courses.find(c => c.id === prereq.to)?.name,
