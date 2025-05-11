@@ -59,43 +59,43 @@ const CurriculumFlow: React.FC = () => {
     // Set up realtime subscription for Supabase
     const subscription = supabase
       .channel('curriculum-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'disciplinas' },
-        (payload) => {
-          console.log('Courses change detected:', payload);
-          loadCurriculumDataAsync().then(data => setCurriculumData(data));
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'prerequisitos' },
-        (payload) => {
-          console.log('Prerequisites change detected:', payload);
-          loadCurriculumDataAsync().then(data => setCurriculumData(data));
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'disciplinas_concluidas' },
-        (payload) => {
-          console.log('Completed courses change detected:', payload);
-          loadCurriculumDataAsync().then(data => setCurriculumData(data));
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'horarios' },
-        (payload) => {
-          console.log('Schedules change detected:', payload);
-          loadCurriculumDataAsync().then(data => setCurriculumData(data));
-        }
-      )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'disciplinas' },
+          (payload) => {
+            console.log('Courses change detected:', payload);
+            loadCurriculumDataAsync().then(data => setCurriculumData(data));
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'prerequisitos' },
+          (payload) => {
+            console.log('Prerequisites change detected:', payload);
+            loadCurriculumDataAsync().then(data => setCurriculumData(data));
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'disciplinas_concluidas' },
+          (payload) => {
+            console.log('Completed courses change detected:', payload);
+            loadCurriculumDataAsync().then(data => setCurriculumData(data));
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'horarios' },
+          (payload) => {
+            console.log('Schedules change detected:', payload);
+            loadCurriculumDataAsync().then(data => setCurriculumData(data));
+          }
+        )
       .subscribe();
     
     return () => {
       // Cleanup subscription
-      supabase.removeChannel(subscription);
+        supabase.removeChannel(subscription);
     };
   }, []);
 
@@ -301,97 +301,97 @@ const CurriculumFlow: React.FC = () => {
         <TabsContent value="flow" className="mt-0">
           <div className="curriculum-flow">
             <div className="overflow-x-auto overflow-y-hidden bg-gray-50 p-2 rounded-lg border">
-              <div className="flex justify-end mb-1">
-                <ZoomControl zoom={zoom} onZoomChange={setZoom} />
+            <div className="flex justify-end mb-1">
+              <ZoomControl zoom={zoom} onZoomChange={setZoom} />
+            </div>
+            <div 
+                className="relative min-w-[840px] curriculum-flow" 
+              ref={containerRef}
+              style={{
+                transform: `scale(${zoom / 100})`,
+                transformOrigin: 'top left',
+                width: `${(100 / zoom) * 100}%`
+              }}
+            >
+              <div className="flex border border-gray-300 mb-1">
+                {Array.from({ length: maxYear }, (_, i) => (
+                  <div 
+                    key={`year-${i+1}`} 
+                    className="flex-1 text-center p-1 font-semibold border-r border-gray-300 last:border-r-0"
+                      style={{ height: '25px' }}
+                  >
+                    {`${i+1}º Ano`}
+                  </div>
+                ))}
+              </div>
+              
+              <div className="flex mb-3 relative" style={{ height: '25px' }}>
+                {Array.from({ length: maxPeriod }, (_, i) => {
+                  const periodPosition = calculatePosition(i + 1, 0);
+                  return (
+                    <div 
+                      key={`period-${i+1}`} 
+                      className="absolute text-center p-1 bg-white border border-gray-300 rounded-md shadow-sm"
+                      style={{ 
+                        left: `${periodPosition.left}px`,
+                        height: '25px',
+                        width: `${periodWidth}px`,
+                        lineHeight: '1'
+                      }}
+                    >
+                      {`${i+1}º Período`}
+                    </div>
+                  );
+                })}
               </div>
               <div 
-                className="relative min-w-[840px] curriculum-flow" 
-                ref={containerRef}
-                style={{
-                  transform: `scale(${zoom / 100})`,
-                  transformOrigin: 'top left',
-                  width: `${(100 / zoom) * 100}%`
-                }}
+                className="relative"
+                style={{ minHeight: `${Math.max(...curriculumData.courses.map(c => c.row)) * 88 + 90}px` }}
               >
-                <div className="flex border border-gray-300 mb-1">
-                  {Array.from({ length: maxYear }, (_, i) => (
-                    <div 
-                      key={`year-${i+1}`} 
-                      className="flex-1 text-center p-1 font-semibold border-r border-gray-300 last:border-r-0"
-                      style={{ height: '25px' }}
-                    >
-                      {`${i+1}º Ano`}
-                    </div>
-                  ))}
-                </div>
+                {curriculumData.courses.map((course) => {
+                  const position = calculatePosition(course.period, course.row);
+                  return (
+                    <CourseBox
+                      key={course.id}
+                      course={course}
+                      position={position}
+                      isCompleted={isCourseCompleted(course.id)}
+                      canTake={canTakeCourse(course.id)}
+                      onToggleCompletion={toggleCourseCompletion}
+                      onClick={() => setSelectedCourse(course)}
+                      isFlowTab={activeTab === 'flow'}
+                      width={periodWidth}
+                    />
+                  );
+                })}
                 
-                <div className="flex mb-3 relative" style={{ height: '25px' }}>
-                  {Array.from({ length: maxPeriod }, (_, i) => {
-                    const periodPosition = calculatePosition(i + 1, 0);
-                    return (
-                      <div 
-                        key={`period-${i+1}`} 
-                        className="absolute text-center p-1 bg-white border border-gray-300 rounded-md shadow-sm"
-                        style={{ 
-                          left: `${periodPosition.left}px`,
-                          height: '25px',
-                          width: `${periodWidth}px`,
-                          lineHeight: '1'
-                        }}
-                      >
-                        {`${i+1}º Período`}
-                      </div>
-                    );
-                  })}
-                </div>
-                <div 
-                  className="relative"
-                  style={{ minHeight: `${Math.max(...curriculumData.courses.map(c => c.row)) * 88 + 90}px` }}
-                >
-                  {curriculumData.courses.map((course) => {
-                    const position = calculatePosition(course.period, course.row);
-                    return (
-                      <CourseBox
-                        key={course.id}
-                        course={course}
-                        position={position}
-                        isCompleted={isCourseCompleted(course.id)}
-                        canTake={canTakeCourse(course.id)}
-                        onToggleCompletion={toggleCourseCompletion}
-                        onClick={() => setSelectedCourse(course)}
-                        isFlowTab={activeTab === 'flow'}
-                        width={periodWidth}
-                      />
-                    );
-                  })}
+                {curriculumData.prerequisites.map((prereq) => {
+                  const fromCourse = curriculumData.courses.find(c => c.id === prereq.from);
+                  const toCourse = curriculumData.courses.find(c => c.id === prereq.to);
                   
-                  {curriculumData.prerequisites.map((prereq) => {
-                    const fromCourse = curriculumData.courses.find(c => c.id === prereq.from);
-                    const toCourse = curriculumData.courses.find(c => c.id === prereq.to);
-                    
-                    if (!fromCourse || !toCourse) return null;
-                    
-                    const fromPosition = calculatePosition(fromCourse.period, fromCourse.row);
-                    const toPosition = calculatePosition(toCourse.period, toCourse.row);
-                    
-                    return (
-                      <PrerequisiteArrow
-                        key={`${prereq.from}-${prereq.to}`}
-                        fromPosition={{
+                  if (!fromCourse || !toCourse) return null;
+                  
+                  const fromPosition = calculatePosition(fromCourse.period, fromCourse.row);
+                  const toPosition = calculatePosition(toCourse.period, toCourse.row);
+                  
+                  return (
+                    <PrerequisiteArrow
+                      key={`${prereq.from}-${prereq.to}`}
+                      fromPosition={{
                           left: fromPosition.left + periodWidth,
                           top: fromPosition.top + 40
-                        }}
-                        toPosition={{
+                      }}
+                      toPosition={{
                           left: toPosition.left,
                           top: toPosition.top + 40
-                        }}
-                        isDirectConnection={toCourse.period - fromCourse.period === 1 && Math.abs(toCourse.row - fromCourse.row) <= 1}
-                        rowDifference={Math.abs(toCourse.row - fromCourse.row)}
-                        boxWidth={0}
+                      }}
+                      isDirectConnection={toCourse.period - fromCourse.period === 1 && Math.abs(toCourse.row - fromCourse.row) <= 1}
+                      rowDifference={Math.abs(toCourse.row - fromCourse.row)}
+                      boxWidth={0}
                         tipo={prereq.tipo}
-                      />
-                    );
-                  })}
+                    />
+                  );
+                })}
                 </div>
               </div>
             </div>

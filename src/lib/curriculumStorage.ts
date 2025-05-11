@@ -287,7 +287,7 @@ export const deleteCourse = async (courseId: string): Promise<CurriculumData> =>
 };
 
 // Add a prerequisite
-export const addPrerequisite = async (from: string, to: string): Promise<CurriculumData> => {
+export const addPrerequisite = async (from: string, to: string, tipo: number = 1): Promise<CurriculumData> => {
   const data = loadCurriculumData();
   
   // Check if already exists
@@ -296,7 +296,7 @@ export const addPrerequisite = async (from: string, to: string): Promise<Curricu
   );
   
   if (!exists) {
-    data.prerequisites.push({ from, to });
+    data.prerequisites.push({ from, to, tipo });
     saveCurriculumData(data);
     
     try {
@@ -308,7 +308,8 @@ export const addPrerequisite = async (from: string, to: string): Promise<Curricu
           .from('prerequisitos')
           .insert({
             from_disciplina: from,
-            to_disciplina: to
+            to_disciplina: to,
+            tipo
           });
         
         if (error) throw error;
@@ -536,4 +537,35 @@ export const importCurriculumToSupabase = async (data: CurriculumData): Promise<
 export const isCourseCompleted = (courseId: string): boolean => {
   const data = loadCurriculumData();
   return data.completedCourses.includes(courseId);
+};
+
+// Atualizar tipo de pré-requisito
+export const updatePrerequisiteType = async (from: string, to: string, tipo: number): Promise<CurriculumData> => {
+  const data = loadCurriculumData();
+  
+  // Atualizar no estado local
+  const prereq = data.prerequisites.find(p => p.from === from && p.to === to);
+  if (prereq) {
+    prereq.tipo = tipo;
+    saveCurriculumData(data);
+  }
+  
+  try {
+    const { data: userData } = await supabase.auth.getSession();
+    
+    // Atualizar no Supabase se o usuário estiver autenticado
+    if (userData?.session?.user) {
+      const { error } = await supabase
+        .from('prerequisitos')
+        .update({ tipo })
+        .eq('from_disciplina', from)
+        .eq('to_disciplina', to);
+      
+      if (error) throw error;
+    }
+  } catch (error) {
+    console.error('Erro ao atualizar tipo de pré-requisito no Supabase:', error);
+  }
+  
+  return data;
 };

@@ -3,8 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Course, Prerequisite, CurriculumData } from '@/types/curriculum';
-import { loadCurriculumData, loadCurriculumDataAsync, deleteCourse, removePrerequisite } from '@/lib/curriculumStorage';
+import { loadCurriculumData, loadCurriculumDataAsync, deleteCourse, removePrerequisite, updatePrerequisiteType } from '@/lib/curriculumStorage';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -26,6 +27,8 @@ const ManageCurriculum: React.FC<ManageCurriculumProps> = ({ onDataChange }) => 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState<'course' | 'prerequisite'>('course');
   const [editingCourse, setEditingCourse] = useState<Course | undefined>(undefined);
+  const [editingPrerequisite, setEditingPrerequisite] = useState<Prerequisite | null>(null);
+  const [editPrerequisiteDialogOpen, setEditPrerequisiteDialogOpen] = useState(false);
 
   // Load data on mount and setup realtime subscription
   useEffect(() => {
@@ -203,6 +206,41 @@ const ManageCurriculum: React.FC<ManageCurriculumProps> = ({ onDataChange }) => 
     onDataChange();
   };
   
+  const handleEditPrerequisite = (prereq: Prerequisite) => {
+    if (!user) {
+      toast({
+        title: "Login necessário",
+        description: "Você precisa estar autenticado para editar pré-requisitos",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setEditingPrerequisite(prereq);
+    setEditPrerequisiteDialogOpen(true);
+  };
+
+  const handleUpdatePrerequisiteType = async (tipo: number) => {
+    if (!editingPrerequisite) return;
+
+    try {
+      await updatePrerequisiteType(editingPrerequisite.from, editingPrerequisite.to, tipo);
+      loadAndSetData();
+      onDataChange();
+      setEditPrerequisiteDialogOpen(false);
+      toast({
+        title: "Sucesso",
+        description: "Tipo de pré-requisito atualizado com sucesso"
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao atualizar pré-requisito",
+        description: error.message || "Ocorreu um erro ao atualizar o tipo do pré-requisito",
+        variant: "destructive"
+      });
+    }
+  };
+  
   // Find course name by ID
   const getCourseName = (courseId: string) => {
     return curriculumData.courses.find(c => c.id === courseId)?.name || courseId;
@@ -278,14 +316,26 @@ const ManageCurriculum: React.FC<ManageCurriculumProps> = ({ onDataChange }) => 
                       <span className="font-medium">{getCourseName(prereq.from)}</span>
                       <span className="mx-3">→</span>
                       <span className="font-medium">{getCourseName(prereq.to)}</span>
+                      <span className="ml-2 text-sm text-gray-500">
+                        ({prereq.tipo === 1 ? 'Pré-requisito' : prereq.tipo === 2 ? 'Có-requisito' : 'Pré-requisito flexível'})
+                      </span>
                     </div>
-                    <Button 
-                      variant="destructive" 
-                      size="sm" 
-                      onClick={() => handleDeletePrerequisite(prereq.from, prereq.to)}
-                    >
-                      Excluir
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleEditPrerequisite(prereq)}
+                      >
+                        Editar
+                      </Button>
+                      <Button 
+                        variant="destructive" 
+                        size="sm" 
+                        onClick={() => handleDeletePrerequisite(prereq.from, prereq.to)}
+                      >
+                        Excluir
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
@@ -329,6 +379,40 @@ const ManageCurriculum: React.FC<ManageCurriculumProps> = ({ onDataChange }) => 
               onCancel={() => setDialogOpen(false)}
             />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog for editing prerequisite type */}
+      <Dialog open={editPrerequisiteDialogOpen} onOpenChange={setEditPrerequisiteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Tipo de Pré-requisito</DialogTitle>
+            <DialogDescription>
+              Selecione o novo tipo de pré-requisito para a relação entre{' '}
+              {editingPrerequisite && (
+                <>
+                  <strong>{getCourseName(editingPrerequisite.from)}</strong> e{' '}
+                  <strong>{getCourseName(editingPrerequisite.to)}</strong>
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <Select
+              value={editingPrerequisite?.tipo.toString()}
+              onValueChange={(value) => handleUpdatePrerequisiteType(parseInt(value))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">Pré-requisito</SelectItem>
+                <SelectItem value="2">Có-requisito</SelectItem>
+                <SelectItem value="3">Pré-requisito flexível</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
