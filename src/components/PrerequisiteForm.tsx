@@ -54,7 +54,7 @@ const PrerequisiteForm: React.FC<PrerequisiteFormProps> = ({ courses, onSave, on
     }
 
     try {
-      // Changed 'type' to 'tipo' to match the Prerequisite interface
+      // Correctly use 'tipo' property to match the Prerequisite interface
       const prerequisite = { from: fromCourseId, to: toCourseId, tipo: parseInt(selectedType) };
       addPrerequisite(fromCourseId, toCourseId, parseInt(selectedType));
       onSave(prerequisite);
