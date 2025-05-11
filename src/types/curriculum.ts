@@ -18,6 +18,7 @@ export interface Course {
 export interface Prerequisite {
   from: string;
   to: string;
+  tipo: number; // 1: Pré-requisito, 2: Có-requisito, 3: Pré-requisito flexível
 }
 
 export interface CurriculumData {

@@ -13,6 +13,7 @@ interface PrerequisiteArrowProps {
   isDirectConnection: boolean; // Indica se é uma conexão direta (mesma linha) ou não
   rowDifference?: number;      // Diferença entre as linhas (opcional)
   boxWidth: number;            // Largura da caixa da disciplina
+  tipo?: number;
 }
 
 const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
@@ -20,10 +21,21 @@ const PrerequisiteArrow: React.FC<PrerequisiteArrowProps> = ({
   toPosition,
   isDirectConnection,
   rowDifference,
-  boxWidth
+  boxWidth,
+  tipo = 1
 }) => {
+  // Determinar a cor da seta baseado no tipo
+  const getArrowColor = () => {
+    switch (tipo) {
+      case 2: return '#FFD700'; // Amarelo para có-requisito
+      case 3: return '#3B82F6'; // Azul para pré-requisito flexível
+      default: return '#EF4444'; // Vermelho para pré-requisito normal
+    }
+  };
+
+  const arrowColor = getArrowColor();
+
   // Configurações visuais padrão para todas as setas
-  const arrowColor = '#ea384c'; // Cor vermelha vibrante para todas as setas
   const arrowWidth = '2.5px';   // Espessura consistente para todas as setas
   
   if (isDirectConnection) {

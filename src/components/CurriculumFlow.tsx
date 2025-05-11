@@ -29,7 +29,7 @@ const CurriculumFlow: React.FC = () => {
   });
   const [schedule, setSchedule] = useState<Record<string, Record<string, Course | null>>>({});
   const [activeTab, setActiveTab] = useState('flow');
-  const [zoom, setZoom] = useState(70); // Começa com 70% (30% menor que o original)
+  const [zoom, setZoom] = useState(70); // Valor base que será exibido como 100%
   const [periodWidth, setPeriodWidth] = useState(160); // Estado para controlar a largura dos períodos
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
@@ -56,62 +56,46 @@ const CurriculumFlow: React.FC = () => {
     
     fetchData();
     
-    // Set up realtime subscriptions for Supabase
-    const subscriptions = [
-      supabase
-        .channel('curriculum-changes-courses')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'disciplinas' },
-          (payload) => {
-            console.log('Courses change detected:', payload);
-            loadCurriculumDataAsync().then(data => setCurriculumData(data));
-          }
-        )
-        .subscribe(),
-      
-      supabase
-        .channel('curriculum-changes-prerequisites')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'prerequisitos' },
-          (payload) => {
-            console.log('Prerequisites change detected:', payload);
-            loadCurriculumDataAsync().then(data => setCurriculumData(data));
-          }
-        )
-        .subscribe(),
-      
-      supabase
-        .channel('curriculum-changes-completed')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'disciplinas_concluidas' },
-          (payload) => {
-            console.log('Completed courses change detected:', payload);
-            loadCurriculumDataAsync().then(data => setCurriculumData(data));
-          }
-        )
-        .subscribe(),
-
-      supabase
-        .channel('curriculum-changes-horarios')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'horarios' },
-          (payload) => {
-            console.log('Schedules change detected:', payload);
-            loadCurriculumDataAsync().then(data => setCurriculumData(data));
-          }
-        )
-        .subscribe()
-    ];
+    // Set up realtime subscription for Supabase
+    const subscription = supabase
+      .channel('curriculum-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'disciplinas' },
+        (payload) => {
+          console.log('Courses change detected:', payload);
+          loadCurriculumDataAsync().then(data => setCurriculumData(data));
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'prerequisitos' },
+        (payload) => {
+          console.log('Prerequisites change detected:', payload);
+          loadCurriculumDataAsync().then(data => setCurriculumData(data));
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'disciplinas_concluidas' },
+        (payload) => {
+          console.log('Completed courses change detected:', payload);
+          loadCurriculumDataAsync().then(data => setCurriculumData(data));
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'horarios' },
+        (payload) => {
+          console.log('Schedules change detected:', payload);
+          loadCurriculumDataAsync().then(data => setCurriculumData(data));
+        }
+      )
+      .subscribe();
     
     return () => {
-      // Cleanup all subscriptions
-      subscriptions.forEach(subscription => {
-        supabase.removeChannel(subscription);
-      });
+      // Cleanup subscription
+      supabase.removeChannel(subscription);
     };
   }, []);
 
@@ -300,117 +284,115 @@ const CurriculumFlow: React.FC = () => {
   }
 
   return (
-    <div className="px-2 py-0 text-sm"> {/* Apenas padding horizontal, sem padding vertical */}
-      <div className="mb-2"> {/* Reduzi mais a margem inferior */}
+    <div className="px-2 py-0 text-sm">
+      <div className="mb-2">
         <ProgressBar 
           percentage={calculateCompletedHours()} 
-          label=" Porcentagem de Carga Horária Cumprida"
+          label=".....Porcentagem de Carga Horária Cumprida"
         />
       </div>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-1"> {/* Reduzi a margem inferior */}
+        <TabsList className="grid w-full grid-cols-3 mb-1">
           <TabsTrigger value="flow">Fluxo do Curso</TabsTrigger>
           <TabsTrigger value="schedule">Grade de Horário</TabsTrigger>
           <TabsTrigger value="courses">Lista de Disciplinas</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="flow" className="mt-0"> {/* Removi a margem superior */}
-          <div className="overflow-x-auto overflow-y-hidden bg-gray-50 p-2 rounded-lg border"> {/* Reduzi o padding */}
-            <div className="flex justify-end mb-1">
-              <ZoomControl zoom={zoom} onZoomChange={setZoom} />
-            </div>
-            <div 
-              className="relative min-w-[840px]" 
-              ref={containerRef}
-              style={{
-                transform: `scale(${zoom / 100})`,
-                transformOrigin: 'top left',
-                width: `${(100 / zoom) * 100}%`
-              }}
-            >
-              {/* Year headers - Ajuste o tamanho das caixas de ano aqui */}
-              <div className="flex border border-gray-300 mb-1">
-                {Array.from({ length: maxYear }, (_, i) => (
-                  <div 
-                    key={`year-${i+1}`} 
-                    className="flex-1 text-center p-1 font-semibold border-r border-gray-300 last:border-r-0"
-                    style={{ height: '25px' }} // Ajuste a altura aqui
-                  >
-                    {`${i+1}º Ano`}
-                  </div>
-                ))}
+        <TabsContent value="flow" className="mt-0">
+          <div className="curriculum-flow">
+            <div className="overflow-x-auto overflow-y-hidden bg-gray-50 p-2 rounded-lg border">
+              <div className="flex justify-end mb-1">
+                <ZoomControl zoom={zoom} onZoomChange={setZoom} />
               </div>
-              
-              {/* Period headers - Ajuste o tamanho das caixas de período aqui */}
-              <div className="flex mb-3 relative" style={{ height: '25px' }}>
-                {Array.from({ length: maxPeriod }, (_, i) => {
-                  const periodPosition = calculatePosition(i + 1, 0);
-                  return (
-                    <div 
-                      key={`period-${i+1}`} 
-                      className="absolute text-center p-1 bg-white border border-gray-300 rounded-md shadow-sm"
-                      style={{ 
-                        left: `${periodPosition.left}px`,
-                        height: '25px',
-                        width: `${periodWidth}px`,
-                        lineHeight: '1'
-                      }}
-                    >
-                      {`${i+1}º Período`}
-                    </div>
-                  );
-                })}
-              </div>
-              {/* Courses section, essa porra ajusta o tamanho do fluxo */}
               <div 
-                className="relative"
-                style={{ minHeight: `${Math.max(...curriculumData.courses.map(c => c.row)) * 88 + 90}px` }}
+                className="relative min-w-[840px] curriculum-flow" 
+                ref={containerRef}
+                style={{
+                  transform: `scale(${zoom / 100})`,
+                  transformOrigin: 'top left',
+                  width: `${(100 / zoom) * 100}%`
+                }}
               >
-                {/* Render course boxes */}
-                {curriculumData.courses.map((course) => {
-                  const position = calculatePosition(course.period, course.row);
-                  return (
-                    <CourseBox
-                      key={course.id}
-                      course={course}
-                      position={position}
-                      isCompleted={isCourseCompleted(course.id)}
-                      canTake={canTakeCourse(course.id)}
-                      onToggleCompletion={toggleCourseCompletion}
-                      onClick={() => setSelectedCourse(course)}
-                      isFlowTab={activeTab === 'flow'}
-                      width={periodWidth}
-                    />
-                  );
-                })}
+                <div className="flex border border-gray-300 mb-1">
+                  {Array.from({ length: maxYear }, (_, i) => (
+                    <div 
+                      key={`year-${i+1}`} 
+                      className="flex-1 text-center p-1 font-semibold border-r border-gray-300 last:border-r-0"
+                      style={{ height: '25px' }}
+                    >
+                      {`${i+1}º Ano`}
+                    </div>
+                  ))}
+                </div>
                 
-                {/* Render prerequisite arrows */}
-                {curriculumData.prerequisites.map((prereq) => {
-                  const fromCourse = curriculumData.courses.find(c => c.id === prereq.from);
-                  const toCourse = curriculumData.courses.find(c => c.id === prereq.to);
+                <div className="flex mb-3 relative" style={{ height: '25px' }}>
+                  {Array.from({ length: maxPeriod }, (_, i) => {
+                    const periodPosition = calculatePosition(i + 1, 0);
+                    return (
+                      <div 
+                        key={`period-${i+1}`} 
+                        className="absolute text-center p-1 bg-white border border-gray-300 rounded-md shadow-sm"
+                        style={{ 
+                          left: `${periodPosition.left}px`,
+                          height: '25px',
+                          width: `${periodWidth}px`,
+                          lineHeight: '1'
+                        }}
+                      >
+                        {`${i+1}º Período`}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div 
+                  className="relative"
+                  style={{ minHeight: `${Math.max(...curriculumData.courses.map(c => c.row)) * 88 + 90}px` }}
+                >
+                  {curriculumData.courses.map((course) => {
+                    const position = calculatePosition(course.period, course.row);
+                    return (
+                      <CourseBox
+                        key={course.id}
+                        course={course}
+                        position={position}
+                        isCompleted={isCourseCompleted(course.id)}
+                        canTake={canTakeCourse(course.id)}
+                        onToggleCompletion={toggleCourseCompletion}
+                        onClick={() => setSelectedCourse(course)}
+                        isFlowTab={activeTab === 'flow'}
+                        width={periodWidth}
+                      />
+                    );
+                  })}
                   
-                  if (!fromCourse || !toCourse) return null;
-                  
-                  const fromPosition = calculatePosition(fromCourse.period, fromCourse.row);
-                  const toPosition = calculatePosition(toCourse.period, toCourse.row);
-                  
-                  return (
-                    <PrerequisiteArrow
-                      key={`${prereq.from}-${prereq.to}`}
-                      fromPosition={{
-                        left: fromPosition.left + periodWidth, // Largura total da box
-                        top: fromPosition.top + 40   // Metade da altura da box
-                      }}
-                      toPosition={{
-                        left: toPosition.left,       // Início da box
-                        top: toPosition.top + 40     // Metade da altura da box
-                      }}
-                      isDirectConnection={toCourse.period - fromCourse.period === 1 && Math.abs(toCourse.row - fromCourse.row) <= 1}
-                      rowDifference={Math.abs(toCourse.row - fromCourse.row)}
-                      boxWidth={0}
-                    />
-                  );
-                })}
+                  {curriculumData.prerequisites.map((prereq) => {
+                    const fromCourse = curriculumData.courses.find(c => c.id === prereq.from);
+                    const toCourse = curriculumData.courses.find(c => c.id === prereq.to);
+                    
+                    if (!fromCourse || !toCourse) return null;
+                    
+                    const fromPosition = calculatePosition(fromCourse.period, fromCourse.row);
+                    const toPosition = calculatePosition(toCourse.period, toCourse.row);
+                    
+                    return (
+                      <PrerequisiteArrow
+                        key={`${prereq.from}-${prereq.to}`}
+                        fromPosition={{
+                          left: fromPosition.left + periodWidth,
+                          top: fromPosition.top + 40
+                        }}
+                        toPosition={{
+                          left: toPosition.left,
+                          top: toPosition.top + 40
+                        }}
+                        isDirectConnection={toCourse.period - fromCourse.period === 1 && Math.abs(toCourse.row - fromCourse.row) <= 1}
+                        rowDifference={Math.abs(toCourse.row - fromCourse.row)}
+                        boxWidth={0}
+                        tipo={prereq.tipo}
+                      />
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
@@ -458,7 +440,6 @@ const CurriculumFlow: React.FC = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Modal de detalhes do curso */}
       {selectedCourse && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-lg w-full">

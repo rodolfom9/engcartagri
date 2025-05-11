@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -17,6 +16,7 @@ const PrerequisiteForm: React.FC<PrerequisiteFormProps> = ({ courses, onSave, on
   const { toast } = useToast();
   const [fromCourseId, setFromCourseId] = useState<string>('');
   const [toCourseId, setToCourseId] = useState<string>('');
+  const [selectedType, setSelectedType] = useState('1');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,8 +53,8 @@ const PrerequisiteForm: React.FC<PrerequisiteFormProps> = ({ courses, onSave, on
     }
 
     try {
-      const prerequisite = { from: fromCourseId, to: toCourseId };
-      addPrerequisite(fromCourseId, toCourseId);
+      const prerequisite = { from: fromCourseId, to: toCourseId, type: parseInt(selectedType) };
+      addPrerequisite(fromCourseId, toCourseId, parseInt(selectedType));
       onSave(prerequisite);
       toast({
         title: "Success",
@@ -109,6 +109,20 @@ const PrerequisiteForm: React.FC<PrerequisiteFormProps> = ({ courses, onSave, on
                   {`${course.period}.${course.row} - ${course.name}`}
                 </SelectItem>
               ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="type">Type of Prerequisite</Label>
+        <Select value={selectedType} onValueChange={setSelectedType}>
+          <SelectTrigger id="type">
+            <SelectValue placeholder="Select type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="1">Pré-requisito</SelectItem>
+            <SelectItem value="2">Có-requisito</SelectItem>
+            <SelectItem value="3">Pré-requisito flexível</SelectItem>
           </SelectContent>
         </Select>
       </div>

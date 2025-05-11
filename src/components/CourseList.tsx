@@ -10,6 +10,7 @@ interface CourseListProps {
   onCheckboxChange?: (course: Course) => void;
   hideCompleted?: boolean;
   schedule?: Record<string, Record<string, Course | null>>;
+  onToggleCompletion?: (courseId: string) => Promise<void>;
 }
 
 const CourseList: React.FC<CourseListProps> = ({ 
@@ -17,7 +18,8 @@ const CourseList: React.FC<CourseListProps> = ({
   showCheckbox = false,
   onCheckboxChange,
   hideCompleted = false,
-  schedule = {}
+  schedule = {},
+  onToggleCompletion
 }) => {
   const [expandedPeriods, setExpandedPeriods] = useState<number[]>([1]);
 
