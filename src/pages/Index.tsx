@@ -117,7 +117,7 @@ const Index = () => {
         </div>
         
         <TabsContent value="view" className="flex-1 pt-0 mt-0">
-          <CurriculumFlow key={refreshKey} />
+          <CurriculumFlow key={refreshKey} onDataChange={handleDataChange} />
         </TabsContent>
         
         <TabsContent value="manage" className="flex-1">
