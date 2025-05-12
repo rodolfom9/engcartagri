@@ -26,5 +26,4 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  base: '/curricular-flow-builder/',
 }));
