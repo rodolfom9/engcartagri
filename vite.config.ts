@@ -26,5 +26,5 @@ export default defineConfig(({ mode }) => ({
     },
   },
   // 👇 base corrigido para funcionar no GitHub Pages
-  base: mode === "development" ? "/" : "/curricular-flow-builder/",
+  base: "/curricular-flow-builder/",
 }));
