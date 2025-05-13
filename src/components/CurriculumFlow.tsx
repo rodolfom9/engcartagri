@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Course, Prerequisite, CurriculumData } from '../types/curriculum';
 import { 
@@ -23,11 +22,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from './ui/use-toast';
 import CurriculumFlowGraph from './CurriculumFlowGraph';
 
-interface CurriculumFlowProps {
-  onDataChange?: () => void; // Make it optional to maintain backwards compatibility
-}
-
-const CurriculumFlow: React.FC<CurriculumFlowProps> = ({ onDataChange }) => {
+const CurriculumFlow: React.FC = () => {
   const [curriculumData, setCurriculumData] = useState<CurriculumData>({ 
     courses: [], 
     prerequisites: [],
@@ -149,11 +144,6 @@ const CurriculumFlow: React.FC<CurriculumFlowProps> = ({ onDataChange }) => {
       // Update local state - this is now handled by the realtime subscription
       // But we keep it for immediate UI feedback
       setCurriculumData(loadCurriculumData());
-      
-      // Call the onDataChange callback if it exists
-      if (onDataChange) {
-        onDataChange();
-      }
     } catch (error) {
       console.error('Error toggling course completion:', error);
     }
@@ -319,10 +309,7 @@ const CurriculumFlow: React.FC<CurriculumFlowProps> = ({ onDataChange }) => {
                 courses={curriculumData.courses}
                 prerequisites={curriculumData.prerequisites}
                 completedCourses={curriculumData.completedCourses}
-                onToggleCompletion={(courseId) => {
-                  toggleCourseCompletion(courseId);
-                  // Don't call onDataChange here as it's already called in toggleCourseCompletion
-                }}
+                onToggleCompletion={toggleCourseCompletion}
                 onCourseClick={(course) => setSelectedCourse(course)}
               />
             </div>
