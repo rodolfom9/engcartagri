@@ -1,5 +1,5 @@
 
-import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
+import { HashRouter, Routes, Route } from "react-router-dom";
 import Index from "../pages/Index";
 import Auth from "../pages/Auth";
 import NotFound from "../pages/NotFound";
