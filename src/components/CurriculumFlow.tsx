@@ -22,7 +22,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from './ui/use-toast';
 import CurriculumFlowGraph from './CurriculumFlowGraph';
 
-const CurriculumFlow: React.FC = () => {
+// Define props interface for CurriculumFlow
+interface CurriculumFlowProps {
+  onDataChange?: () => void;
+}
+
+const CurriculumFlow: React.FC<CurriculumFlowProps> = ({ onDataChange }) => {
   const [curriculumData, setCurriculumData] = useState<CurriculumData>({ 
     courses: [], 
     prerequisites: [],
@@ -144,6 +149,11 @@ const CurriculumFlow: React.FC = () => {
       // Update local state - this is now handled by the realtime subscription
       // But we keep it for immediate UI feedback
       setCurriculumData(loadCurriculumData());
+      
+      // Call the onDataChange callback if it exists
+      if (onDataChange) {
+        onDataChange();
+      }
     } catch (error) {
       console.error('Error toggling course completion:', error);
     }
