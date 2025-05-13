@@ -21,9 +21,8 @@ import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from './ui/use-toast';
 import CurriculumFlowGraph from './CurriculumFlowGraph';
-import { CurriculumFlowProps } from './curriculum/types';
 
-const CurriculumFlow: React.FC<CurriculumFlowProps> = ({ onDataChange }) => {
+const CurriculumFlow: React.FC = () => {
   const [curriculumData, setCurriculumData] = useState<CurriculumData>({ 
     courses: [], 
     prerequisites: [],
@@ -145,11 +144,6 @@ const CurriculumFlow: React.FC<CurriculumFlowProps> = ({ onDataChange }) => {
       // Update local state - this is now handled by the realtime subscription
       // But we keep it for immediate UI feedback
       setCurriculumData(loadCurriculumData());
-      
-      // Call the onDataChange callback if provided
-      if (onDataChange) {
-        onDataChange();
-      }
     } catch (error) {
       console.error('Error toggling course completion:', error);
     }
