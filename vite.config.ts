@@ -25,6 +25,5 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  // 👇 base corrigido para funcionar no GitHub Pages
-  base: "/curricular-flow-builder/",
+  base: "/",
 }));
