@@ -41,15 +41,38 @@ const importDefaultDataToSupabase = async (): Promise<void> => {
   }
 };
 
-// Load curriculum data from Supabase
 export const loadCurriculumDataAsync = async (): Promise<CurriculumData> => {
   try {
+    console.log('🔍 loadCurriculumDataAsync: Iniciando carregamento dos dados...');
+    
     // Fetch courses
     const { data: courses, error: coursesError } = await supabase
       .from('disciplinas')
       .select('*');
 
-    if (coursesError) throw coursesError;
+    console.log('📚 loadCurriculumDataAsync: courses from supabase:', courses);
+    console.log('❌ loadCurriculumDataAsync: coursesError:', coursesError);
+    console.log('📊 loadCurriculumDataAsync: total de disciplinas encontradas:', courses?.length || 0);
+    
+    if (coursesError) {
+      console.error('💥 Erro ao carregar disciplinas:', coursesError);
+      // Retornar dados vazios se houver erro
+      return {
+        courses: [],
+        prerequisites: [],
+        completedCourses: []
+      };
+    }
+
+    // Se não há cursos, retornar dados vazios
+    if (!courses || courses.length === 0) {
+      console.log('⚠️ Nenhuma disciplina encontrada no banco de dados');
+      return {
+        courses: [],
+        prerequisites: [],
+        completedCourses: []
+      };
+    }
 
     // Fetch prerequisites
     const { data: prerequisites, error: prerequisitesError } = await supabase

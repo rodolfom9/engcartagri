@@ -1,127 +1,183 @@
-# Curricular Flow Builder
+# Supabase CLI
 
-Um sistema web para gerenciamento e visualização do fluxo curricular do curso de Engenharia Cartográfica e de Agrimensura do IFG.
+[![Coverage Status](https://coveralls.io/repos/github/supabase/cli/badge.svg?branch=main)](https://coveralls.io/github/supabase/cli?branch=main) [![Bitbucket Pipelines](https://img.shields.io/bitbucket/pipelines/supabase-cli/setup-cli/master?style=flat-square&label=Bitbucket%20Canary)](https://bitbucket.org/supabase-cli/setup-cli/pipelines) [![Gitlab Pipeline Status](https://img.shields.io/gitlab/pipeline-status/sweatybridge%2Fsetup-cli?label=Gitlab%20Canary)
+](https://gitlab.com/sweatybridge/setup-cli/-/pipelines)
 
-## Estrutura do Projeto
+[Supabase](https://supabase.io) is an open source Firebase alternative. We're building the features of Firebase using enterprise-grade open source tools.
 
-### Diretório `/src`
+This repository contains all the functionality for Supabase CLI.
 
-#### Componentes (`/src/components`)
-- `CourseForm.tsx`: Formulário para adicionar/editar disciplinas, incluindo campos para nome, período, créditos, professor e horários
-- `CourseList.tsx`: Lista todas as disciplinas do curso, agrupadas por período, com opção de marcar como concluídas
-- `CurriculumFlow.tsx`: Componente principal que gerencia o fluxo curricular, incluindo visualização, edição e pré-requisitos
-- `ManageCurriculum.tsx`: Interface administrativa para gerenciar o currículo
-- `PrerequisiteForm.tsx`: Formulário para adicionar/remover pré-requisitos entre disciplinas
-- `ScheduleGrid.tsx`: Grade de horários das disciplinas, mostrando aulas por dia e horário
+- [x] Running Supabase locally
+- [x] Managing database migrations
+- [x] Creating and deploying Supabase Functions
+- [x] Generating types directly from your database schema
+- [x] Making authenticated HTTP requests to [Management API](https://supabase.com/docs/reference/api/introduction)
 
-#### Contextos (`/src/contexts`)
-- `AuthContext.tsx`: Gerencia o estado de autenticação do usuário usando Supabase
+## Getting started
 
-#### Dados (`/src/data`)
-- `courses.ts`: Dados padrão das disciplinas do curso, incluindo informações como nome, período, créditos, etc.
+### Install the CLI
 
-#### Hooks (`/src/hooks`)
-- `use-toast.ts`: Hook personalizado para exibir notificações toast na interface
+Available via [NPM](https://www.npmjs.com) as dev dependency. To install:
 
-#### Integrações (`/src/integrations`)
-- `supabase/client.ts`: Configuração e instância do cliente Supabase
+```bash
+npm i supabase --save-dev
+```
 
-#### Biblioteca (`/src/lib`)
-- `curriculumStorage.ts`: Funções para manipulação dos dados do currículo no localStorage
-- `supabaseService.ts`: Serviços para interação com o Supabase, incluindo CRUD de disciplinas, pré-requisitos e horários
+To install the beta release channel:
 
-#### Tipos (`/src/types`)
-- `curriculum.ts`: Definições de tipos TypeScript para disciplinas, pré-requisitos e dados do currículo
+```bash
+npm i supabase@beta --save-dev
+```
 
-### Banco de Dados (Supabase)
+When installing with yarn 4, you need to disable experimental fetch with the following nodejs config.
 
-#### Tabelas
-- `disciplinas`: Armazena informações das disciplinas
-  - Colunas: id, name, period, row, hours, type, credits, professor, user_id, created_at, updated_at
+```
+NODE_OPTIONS=--no-experimental-fetch yarn add supabase
+```
 
-- `horarios`: Armazena os horários das disciplinas
-  - Colunas: id, disciplina_id, day1, time1, day2, time2, day3, time3, created_at
+> **Note**
+For Bun versions below v1.0.17, you must add `supabase` as a [trusted dependency](https://bun.sh/guides/install/trusted) before running `bun add -D supabase`.
 
-- `prerequisitos`: Armazena os pré-requisitos entre disciplinas
-  - Colunas: id, from_disciplina, to_disciplina, created_at
+<details>
+  <summary><b>macOS</b></summary>
 
-- `disciplinas_concluidas`: Registra as disciplinas concluídas por cada usuário
-  - Colunas: id, disciplina_id, user_id, created_at
+  Available via [Homebrew](https://brew.sh). To install:
 
-## Funcionalidades
+  ```sh
+  brew install supabase/tap/supabase
+  ```
 
-1. **Gestão de Disciplinas**
-   - Adicionar/Editar/Remover disciplinas
-   - Definir nome, período, créditos, professor
-   - Gerenciar horários de aula
+  To install the beta release channel:
+  
+  ```sh
+  brew install supabase/tap/supabase-beta
+  brew link --overwrite supabase-beta
+  ```
+  
+  To upgrade:
 
-2. **Fluxo Curricular**
-   - Visualização do fluxo curricular por período
-   - Gerenciamento de pré-requisitos
-   - Marcação de disciplinas concluídas
+  ```sh
+  brew upgrade supabase
+  ```
+</details>
 
-3. **Grade de Horários**
-   - Visualização dos horários de aula
-   - Detecção de conflitos de horário
-   - Organização por dia e horário
+<details>
+  <summary><b>Windows</b></summary>
 
-4. **Autenticação**
-   - Login/Registro de usuários via Supabase
-   - Persistência de dados por usuário
-   - Controle de acesso baseado em autenticação
+  Available via [Scoop](https://scoop.sh). To install:
 
-## Tecnologias Utilizadas
+  ```powershell
+  scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
+  scoop install supabase
+  ```
 
-- React
-- TypeScript
-- Supabase (Banco de dados e Autenticação)
-- Tailwind CSS (Estilização)
-- Shadcn/ui (Componentes de UI)
+  To upgrade:
 
-## Políticas de Segurança (RLS)
+  ```powershell
+  scoop update supabase
+  ```
+</details>
 
-### Tabela `disciplinas`
-- Visualização: Permitida para todos
-- Inserção: Permitida para usuários autenticados
-- Atualização: Permitida para proprietários ou disciplinas sem proprietário
-- Exclusão: Permitida para proprietários
+<details>
+  <summary><b>Linux</b></summary>
 
-### Tabela `horarios`
-- Operações vinculadas às permissões da tabela `disciplinas`
+  Available via [Homebrew](https://brew.sh) and Linux packages.
 
-### Tabela `prerequisitos`
-- Visualização: Permitida para todos
-- Modificação: Permitida para usuários autenticados
+  #### via Homebrew
 
-### Tabela `disciplinas_concluidas`
-- Operações restritas ao próprio usuário
+  To install:
 
-## Como Executar
+  ```sh
+  brew install supabase/tap/supabase
+  ```
 
-1. Clone o repositório
-2. Instale as dependências:
-   ```bash
-   npm install
-   ```
-3. Configure as variáveis de ambiente:
-   ```env
-   NEXT_PUBLIC_SUPABASE_URL=sua_url_do_supabase
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=sua_chave_anonima_do_supabase
-   ```
-4. Execute o projeto:
-   ```bash
-   npm run dev
-   ```
+  To upgrade:
 
-## Contribuição
+  ```sh
+  brew upgrade supabase
+  ```
 
-Para contribuir com o projeto:
-1. Faça um fork do repositório
-2. Crie uma branch para sua feature
-3. Faça commit das suas alterações
-4. Envie um pull request
+  #### via Linux packages
 
-## Licença
+  Linux packages are provided in [Releases](https://github.com/supabase/cli/releases). To install, download the `.apk`/`.deb`/`.rpm`/`.pkg.tar.zst` file depending on your package manager and run the respective commands.
 
-Este projeto está sob a licença MIT. Veja o arquivo LICENSE para mais detalhes.
-bbb
+  ```sh
+  sudo apk add --allow-untrusted <...>.apk
+  ```
+
+  ```sh
+  sudo dpkg -i <...>.deb
+  ```
+
+  ```sh
+  sudo rpm -i <...>.rpm
+  ```
+
+  ```sh
+  sudo pacman -U <...>.pkg.tar.zst
+  ```
+</details>
+
+<details>
+  <summary><b>Other Platforms</b></summary>
+
+  You can also install the CLI via [go modules](https://go.dev/ref/mod#go-install) without the help of package managers.
+
+  ```sh
+  go install github.com/supabase/cli@latest
+  ```
+
+  Add a symlink to the binary in `$PATH` for easier access:
+
+  ```sh
+  ln -s "$(go env GOPATH)/bin/cli" /usr/bin/supabase
+  ```
+
+  This works on other non-standard Linux distros.
+</details>
+
+<details>
+  <summary><b>Community Maintained Packages</b></summary>
+
+  Available via [pkgx](https://pkgx.sh/). Package script [here](https://github.com/pkgxdev/pantry/blob/main/projects/supabase.com/cli/package.yml).
+  To install in your working directory:
+
+  ```bash
+  pkgx install supabase
+  ```
+
+  Available via [Nixpkgs](https://nixos.org/). Package script [here](https://github.com/NixOS/nixpkgs/blob/master/pkgs/development/tools/supabase-cli/default.nix).
+</details>
+
+### Run the CLI
+
+```bash
+supabase bootstrap
+```
+
+Or using npx:
+
+```bash
+npx supabase bootstrap
+```
+
+The bootstrap command will guide you through the process of setting up a Supabase project using one of the [starter](https://github.com/supabase-community/supabase-samples/blob/main/samples.json) templates.
+
+## Docs
+
+Command & config reference can be found [here](https://supabase.com/docs/reference/cli/about).
+
+## Breaking changes
+
+We follow semantic versioning for changes that directly impact CLI commands, flags, and configurations.
+
+However, due to dependencies on other service images, we cannot guarantee that schema migrations, seed.sql, and generated types will always work for the same CLI major version. If you need such guarantees, we encourage you to pin a specific version of CLI in package.json.
+
+## Developing
+
+To run from source:
+
+```sh
+# Go >= 1.22
+go run . help
+```

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { ReactFlowProvider } from '@xyflow/react';
 import { Course, Prerequisite, CurriculumData } from '../types/curriculum';
 import { 
   loadCurriculumData, 
@@ -9,7 +10,6 @@ import {
   initializeData
 } from '../lib/curriculumStorage';
 import CourseBox from './CourseBox';
-import PrerequisiteArrow from './PrerequisiteArrow';
 import ScheduleGrid from './ScheduleGrid';
 import CourseList from './CourseList';
 import ProgressBar from './ProgressBar';
@@ -200,6 +200,16 @@ const CurriculumFlow: React.FC = () => {
     setSchedule(newSchedule);
   };
 
+  // Função para lidar com clique no curso
+  const handleCourseClick = (course: Course) => {
+    setSelectedCourse(course);
+  };
+
+  // Função para marcar/desmarcar curso como completo (alias para compatibilidade)
+  const handleMarkCourseCompleted = (courseId: string) => {
+    toggleCourseCompletion(courseId);
+  };
+
   // Função para obter a cor de fundo do curso
   const getCourseBackground = (course: Course): string => {
     if (isCourseCompleted(course.id)) {
@@ -299,21 +309,15 @@ const CurriculumFlow: React.FC = () => {
           <TabsTrigger value="courses">Lista de Disciplinas</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="flow" className="mt-0">
-          <div className="curriculum-flow">
-            <div className="bg-gray-50 p-2 rounded-lg border">
-              <div className="flex justify-end mb-1">
-                <ZoomControl zoom={zoom} onZoomChange={setZoom} />
-              </div>
-              <CurriculumFlowGraph
-                courses={curriculumData.courses}
-                prerequisites={curriculumData.prerequisites}
-                completedCourses={curriculumData.completedCourses}
-                onToggleCompletion={toggleCourseCompletion}
-                onCourseClick={(course) => setSelectedCourse(course)}
-              />
-            </div>
-          </div>
+        <TabsContent value="flow" className="h-[80vh] flex flex-col">
+          <ReactFlowProvider>
+            <CurriculumFlowGraph
+              courses={curriculumData.courses}  
+              completedCourses={curriculumData.completedCourses}
+              onToggleCompletion={(id) => handleMarkCourseCompleted(id)}
+              onCourseClick={handleCourseClick}
+            />
+          </ReactFlowProvider>
         </TabsContent>
 
         <TabsContent value="schedule">
