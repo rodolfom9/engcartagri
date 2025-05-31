@@ -320,19 +320,22 @@ const CurriculumFlow: React.FC = () => {
           </ReactFlowProvider>
         </TabsContent>
 
-        <TabsContent value="schedule">
-          <div className="grid grid-cols-1 lg:grid-cols-[800px,1fr] gap-4">
-            <div className="bg-white rounded-lg p-4 shadow-sm max-h-[600px] overflow-hidden">
-              <ScheduleGrid
-                courses={curriculumData.courses.filter(course => !isCourseCompleted(course.id))}
-                schedule={schedule}
-                onRemoveCourse={(day, time) => {
-                  const course = schedule[day]?.[time];
-                  if (course) {
-                    handleRemoveCourse(course);
-                  }
-                }}
-              />
+        <TabsContent value="schedule" className="h-[calc(100vh-180px)]">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,800px),1fr] gap-4 h-full">
+            <div className="bg-white rounded-lg p-2 shadow-sm h-full overflow-hidden flex flex-col">
+              <h3 className="text-lg font-semibold mb-2">Grade de Horário</h3>
+              <div className="flex-1 overflow-hidden">
+                <ScheduleGrid
+                  courses={curriculumData.courses.filter(course => !isCourseCompleted(course.id))}
+                  schedule={schedule}
+                  onRemoveCourse={(day, time) => {
+                    const course = schedule[day]?.[time];
+                    if (course) {
+                      handleRemoveCourse(course);
+                    }
+                  }}
+                />
+              </div>
             </div>
             <div className="bg-white rounded-lg p-4 shadow-sm max-h-[600px] overflow-y-auto">
               <CourseList 

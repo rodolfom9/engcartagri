@@ -192,6 +192,7 @@ export default function CurriculumFlowGraph({
         data: edge.data || { positionHandlers: [], type: 'smoothstep' },
         type: edge.type || 'positionable',
         style: { 
+          ...(edge.style || {}),
           stroke: strokeColor, 
           strokeWidth: 2,
         },
