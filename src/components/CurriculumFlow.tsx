@@ -309,15 +309,17 @@ const CurriculumFlow: React.FC = () => {
           <TabsTrigger value="courses">Lista de Disciplinas</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="flow" className="h-[80vh] flex flex-col">
-          <ReactFlowProvider>
-            <CurriculumFlowGraph
-              courses={curriculumData.courses}  
-              completedCourses={curriculumData.completedCourses}
-              onToggleCompletion={(id) => handleMarkCourseCompleted(id)}
-              onCourseClick={handleCourseClick}
-            />
-          </ReactFlowProvider>
+        <TabsContent value="flow" className="mt-0">
+          <div className="h-[80vh] flex flex-col">
+            <ReactFlowProvider>
+              <CurriculumFlowGraph
+                courses={curriculumData.courses}  
+                completedCourses={curriculumData.completedCourses}
+                onToggleCompletion={(id) => handleMarkCourseCompleted(id)}
+                onCourseClick={handleCourseClick}
+              />
+            </ReactFlowProvider>
+          </div>
         </TabsContent>
 
         <TabsContent value="schedule" className="h-[calc(100vh-180px)]">
@@ -360,7 +362,7 @@ const CurriculumFlow: React.FC = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="courses">
+        <TabsContent value="courses" className="mt-2">
           <CourseList 
             courses={curriculumData.courses}
             onToggleCompletion={toggleCourseCompletion}
