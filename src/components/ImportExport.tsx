@@ -19,7 +19,11 @@ const ImportExport: React.FC<ImportExportProps> = ({ onImport }) => {
 
   const handleExport = () => {
     const data = loadCurriculumData();
-    const jsonString = JSON.stringify(data, null, 2);
+    // Only export completed courses
+    const exportData = {
+      completedCourses: data.completedCourses
+    };
+    const jsonString = JSON.stringify(exportData, null, 2);
     setImportData(jsonString);
 
     // Also copy to clipboard
@@ -27,7 +31,7 @@ const ImportExport: React.FC<ImportExportProps> = ({ onImport }) => {
       .then(() => {
         toast({
           title: "Copiado para área de transferência",
-          description: "Os dados do currículo foram copiados para sua área de transferência"
+          description: "As disciplinas concluídas foram copiadas para sua área de transferência"
         });
       })
       .catch(() => {
@@ -74,22 +78,36 @@ const ImportExport: React.FC<ImportExportProps> = ({ onImport }) => {
 
   const handleImport = async () => {
     try {
-      const data = JSON.parse(importData) as CurriculumData;
+      const importedData = JSON.parse(importData);
       
-      // Basic validation
-      if (!data.courses || !Array.isArray(data.courses) || 
-          !data.prerequisites || !Array.isArray(data.prerequisites)) {
+      // Check if it's the new format (only completed courses) or the old format (full curriculum)
+      let completedCoursesToImport: string[] = [];
+      
+      if (importedData.completedCourses && Array.isArray(importedData.completedCourses)) {
+        // New format: only completed courses
+        completedCoursesToImport = importedData.completedCourses;
+      } else if (importedData.courses && importedData.prerequisites && importedData.completedCourses) {
+        // Old format: full curriculum data - extract only completed courses
+        completedCoursesToImport = importedData.completedCourses;
+      } else {
         throw new Error("Formato de dados inválido");
       }
 
-      const success = await importCurriculumToSupabase(data);
+      // Get current curriculum data and update only completed courses
+      const currentData = loadCurriculumData();
+      const updatedData = {
+        ...currentData,
+        completedCourses: completedCoursesToImport
+      };
+
+      const success = await importCurriculumToSupabase(updatedData);
       
       if (success) {
         onImport();
         
         toast({
           title: "Importação bem-sucedida",
-          description: `Importadas ${data.courses.length} disciplinas e ${data.prerequisites.length} pré-requisitos`
+          description: `Importadas ${completedCoursesToImport.length} disciplinas concluídas`
         });
         
         setImportData('');
@@ -122,14 +140,14 @@ const ImportExport: React.FC<ImportExportProps> = ({ onImport }) => {
           <Button onClick={handleImport} disabled={!importData} className="flex-1">Importar</Button>
         </div>
         <Textarea
-          placeholder="Cole os dados do currículo aqui para importar, ou exporte para ver os dados..."
+          placeholder="Cole os dados das disciplinas concluídas aqui para importar, ou exporte para ver os dados..."
           value={importData}
           onChange={e => setImportData(e.target.value)}
           className="min-h-[200px] font-mono text-sm"
         />
       </CardContent>
       <CardFooter className="text-sm text-gray-500">
-        Use este recurso para fazer backup dos seus dados ou compartilhá-los com outros.
+        Use este recurso para fazer backup das suas disciplinas concluídas ou compartilhá-las com outros.
       </CardFooter>
     </Card>
   );
