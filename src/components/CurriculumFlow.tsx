@@ -296,7 +296,7 @@ const CurriculumFlow: React.FC = () => {
   return (
     <div className="px-2 py-0 text-sm">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-1">
+        <TabsList className="grid w-full grid-cols-3 mb-1 border border-green-300 rounded-lg">
           <TabsTrigger value="flow">Fluxo do Curso</TabsTrigger>
           <TabsTrigger value="schedule">Grade de Horário</TabsTrigger>
           <TabsTrigger value="courses">Lista de Disciplinas</TabsTrigger>

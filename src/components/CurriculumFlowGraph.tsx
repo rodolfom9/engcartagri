@@ -17,6 +17,7 @@ import {
 import { Course } from '@/types/curriculum';
 import PositionableEdge from './PositionableEdge';
 import { curriculumEdges, addEdgeToList } from '@/data/curriculumEdges';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Props {
   courses: Course[];
@@ -177,6 +178,7 @@ export default function CurriculumFlowGraph({
   onToggleCompletion, 
   onCourseClick 
 }: Props) {
+  const { user } = useAuth(); // Hook para verificar autenticação
   // Função para garantir que as edges tenham a estrutura correta e aplicar cores baseadas na conclusão
   const sanitizeEdges = (edges: Edge[]): Edge[] => {
     return edges.map(edge => {
@@ -405,22 +407,25 @@ export default function CurriculumFlowGraph({
 
   return (
     <div className="h-full relative">
-      <div className="absolute top-4 right-4 z-10 flex space-x-2">
-        <button 
-          onClick={handleExportEdges}
-          className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
-          title="Copiar código para a área de transferência"
-        >
-          Copiar Código das Linhas
-        </button>
-        <button 
-          onClick={handleDownloadEdges}
-          className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm"
-          title="Baixar arquivo curriculumEdges.ts"
-        >
-          Baixar Arquivo
-        </button>
-      </div>
+      {/* Mostrar botões apenas se o usuário estiver logado */}
+      {user && (
+        <div className="absolute top-4 right-4 z-10 flex space-x-2">
+          <button 
+            onClick={handleExportEdges}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
+            title="Copiar código para a área de transferência"
+          >
+            Copiar Código das Linhas
+          </button>
+          <button 
+            onClick={handleDownloadEdges}
+            className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm"
+            title="Baixar arquivo curriculumEdges.ts"
+          >
+            Baixar Arquivo
+          </button>
+        </div>
+      )}
       <ReactFlow
         nodes={flowNodes}
         edges={edges}
