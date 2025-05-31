@@ -3,6 +3,7 @@ import { supabase } from '../integrations/supabase/client';
 import { saveCourseToSupabase, deleteCourseFromSupabase, addPrerequisiteToSupabase, removePrerequisiteFromSupabase, markCourseCompletedInSupabase, unmarkCourseCompletedInSupabase } from './supabaseService';
 
 const STORAGE_KEY = 'curriculum_data';
+const SESSION_STORAGE_KEY = 'curriculum_data_session';
 
 // Default empty curriculum data structure when nothing is available
 const defaultEmptyCurriculumData = {
@@ -88,12 +89,33 @@ export const loadCurriculumDataAsync = async (): Promise<CurriculumData> => {
 
     if (schedulesError) throw schedulesError;
 
-    // Fetch completed courses
-    const { data: completedCourses, error: completedCoursesError } = await supabase
-      .from('disciplinas_concluidas')
-      .select('disciplina_id');
+    // Fetch completed courses - handle differently for authenticated vs non-authenticated users
+    let completedCourses: any[] = [];
+    const { data: userData } = await supabase.auth.getSession();
+    
+    if (userData?.session?.user) {
+      // User is authenticated, fetch their completed courses from Supabase
+      const { data: userCompletedCourses, error: completedCoursesError } = await supabase
+        .from('disciplinas_concluidas')
+        .select('disciplina_id')
+        .eq('user_id', userData.session.user.id);
 
-    if (completedCoursesError) throw completedCoursesError;
+      if (completedCoursesError) throw completedCoursesError;
+      completedCourses = userCompletedCourses || [];
+    } else {
+      // User is not authenticated, check sessionStorage for temporary completed courses
+      // This preserves progress during navigation but clears on page reload (F5)
+      try {
+        const sessionCompletedCourses = sessionStorage.getItem('completed_courses_session');
+        if (sessionCompletedCourses) {
+          const courseIds = JSON.parse(sessionCompletedCourses);
+          completedCourses = courseIds.map((courseId: string) => ({ disciplina_id: courseId }));
+        }
+      } catch (error) {
+        console.error('Error loading completed courses from sessionStorage:', error);
+        completedCourses = [];
+      }
+    }
 
     // Map the data to match our application's structure
     const mappedCourses = courses.map(course => {
@@ -144,7 +166,24 @@ export const loadCurriculumDataAsync = async (): Promise<CurriculumData> => {
     };
     
     if (typeof window !== 'undefined') {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      if (userData?.session?.user) {
+        // User is authenticated, save everything to localStorage
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      } else {
+        // User not authenticated, save only courses and prerequisites to localStorage
+        // Completed courses go to sessionStorage (lost on F5)
+        const dataForLocalStorage = {
+          courses: data.courses,
+          prerequisites: data.prerequisites,
+          completedCourses: [] // Don't persist completed courses for non-authenticated users
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(dataForLocalStorage));
+        
+        // Save completed courses to sessionStorage only
+        if (data.completedCourses.length > 0) {
+          sessionStorage.setItem('completed_courses_session', JSON.stringify(data.completedCourses));
+        }
+      }
     }
     
     return data;
@@ -159,8 +198,24 @@ export const loadCurriculumData = (): CurriculumData => {
   try {
     if (typeof window === 'undefined') return defaultEmptyCurriculumData;
     
+    // Try to load from localStorage first (for courses and prerequisites)
     const savedData = localStorage.getItem(STORAGE_KEY);
-    return savedData ? JSON.parse(savedData) : defaultEmptyCurriculumData;
+    const data = savedData ? JSON.parse(savedData) : defaultEmptyCurriculumData;
+    
+    // For completed courses, check sessionStorage first (for non-authenticated users)
+    // This ensures that completed courses are only preserved during session, not after F5
+    const sessionCompletedCourses = sessionStorage.getItem('completed_courses_session');
+    const localCompletedCourses = data.completedCourses || [];
+    
+    // Use session storage completed courses if available, otherwise use localStorage
+    const completedCourses = sessionCompletedCourses 
+      ? JSON.parse(sessionCompletedCourses) 
+      : localCompletedCourses;
+    
+    return {
+      ...data,
+      completedCourses: completedCourses
+    };
   } catch (error) {
     console.error('Error loading data from localStorage:', error);
     return defaultEmptyCurriculumData;
@@ -170,7 +225,17 @@ export const loadCurriculumData = (): CurriculumData => {
 // Save data to localStorage and optionally to Supabase
 export const saveCurriculumData = (data: CurriculumData): void => {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  
+  // Always save courses and prerequisites to localStorage (these are shared)
+  const dataForLocalStorage = {
+    ...data,
+    completedCourses: [] // Don't save completed courses to localStorage for non-authenticated users
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(dataForLocalStorage));
+  
+  // Save completed courses to sessionStorage (will be lost on F5)
+  // This ensures completed courses are only preserved during navigation, not after reload
+  sessionStorage.setItem('completed_courses_session', JSON.stringify(data.completedCourses));
 };
 
 // Add a course to Supabase and localStorage
@@ -374,15 +439,18 @@ export const removePrerequisite = async (from: string, to: string): Promise<Curr
 // Mark a course as completed
 export const markCourseCompleted = async (courseId: string): Promise<void> => {
   const data = loadCurriculumData();
+  
   if (!data.completedCourses.includes(courseId)) {
     data.completedCourses.push(courseId);
-    saveCurriculumData(data);
     
+    // Check if user is authenticated to determine storage strategy
     try {
       const { data: userData } = await supabase.auth.getSession();
       
-      // Mark as completed in Supabase if user is authenticated
       if (userData?.session?.user) {
+        // User is authenticated, save to both localStorage and Supabase for persistence
+        saveCurriculumData(data);
+        
         const { error } = await supabase
           .from('disciplinas_concluidas')
           .insert({
@@ -390,10 +458,19 @@ export const markCourseCompleted = async (courseId: string): Promise<void> => {
             user_id: userData.session.user.id
           });
         
-        if (error) throw error;
+        if (error) {
+          console.error('Error marking course as completed in Supabase:', error);
+          // Don't throw error here - local marking still works
+        }
+      } else {
+        // User not authenticated, save only to sessionStorage (lost on F5)
+        sessionStorage.setItem('completed_courses_session', JSON.stringify(data.completedCourses));
+        console.log('Usuário não autenticado. Disciplina marcada temporariamente (será perdida ao recarregar a página).');
       }
     } catch (error) {
-      console.error('Error marking course as completed in Supabase:', error);
+      console.error('Error checking authentication or saving:', error);
+      // Fallback to sessionStorage for non-authenticated users
+      sessionStorage.setItem('completed_courses_session', JSON.stringify(data.completedCourses));
     }
   }
 };
@@ -402,23 +479,34 @@ export const markCourseCompleted = async (courseId: string): Promise<void> => {
 export const unmarkCourseCompleted = async (courseId: string): Promise<void> => {
   const data = loadCurriculumData();
   data.completedCourses = data.completedCourses.filter(id => id !== courseId);
-  saveCurriculumData(data);
   
+  // Check if user is authenticated to determine storage strategy
   try {
     const { data: userData } = await supabase.auth.getSession();
     
-    // Unmark as completed in Supabase if user is authenticated
     if (userData?.session?.user) {
+      // User is authenticated, save to both localStorage and remove from Supabase
+      saveCurriculumData(data);
+      
       const { error } = await supabase
         .from('disciplinas_concluidas')
         .delete()
         .eq('disciplina_id', courseId)
         .eq('user_id', userData.session.user.id);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error unmarking course as completed in Supabase:', error);
+        // Don't throw error here - local unmarking still works
+      }
+    } else {
+      // User not authenticated, save only to sessionStorage (lost on F5)
+      sessionStorage.setItem('completed_courses_session', JSON.stringify(data.completedCourses));
+      console.log('Usuário não autenticado. Disciplina desmarcada temporariamente.');
     }
   } catch (error) {
-    console.error('Error unmarking course as completed in Supabase:', error);
+    console.error('Error checking authentication or removing:', error);
+    // Fallback to sessionStorage for non-authenticated users
+    sessionStorage.setItem('completed_courses_session', JSON.stringify(data.completedCourses));
   }
 };
 

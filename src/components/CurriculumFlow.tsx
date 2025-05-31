@@ -20,8 +20,10 @@ import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from './ui/use-toast';
 import CurriculumFlowGraph from './CurriculumFlowGraph';
+import { useAuth } from '@/contexts/AuthContext';
 
 const CurriculumFlow: React.FC = () => {
+  const { user } = useAuth();
   const [curriculumData, setCurriculumData] = useState<CurriculumData>({ 
     courses: [], 
     prerequisites: [],
@@ -56,48 +58,50 @@ const CurriculumFlow: React.FC = () => {
     
     fetchData();
     
-    // Set up realtime subscription for Supabase
-    const subscription = supabase
-      .channel('curriculum-changes')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'disciplinas' },
-          (payload) => {
-            console.log('Courses change detected:', payload);
-            loadCurriculumDataAsync().then(data => setCurriculumData(data));
-          }
-        )
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'prerequisitos' },
-          (payload) => {
-            console.log('Prerequisites change detected:', payload);
-            loadCurriculumDataAsync().then(data => setCurriculumData(data));
-          }
-        )
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'disciplinas_concluidas' },
-          (payload) => {
-            console.log('Completed courses change detected:', payload);
-            loadCurriculumDataAsync().then(data => setCurriculumData(data));
-          }
-        )
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'horarios' },
-          (payload) => {
-            console.log('Schedules change detected:', payload);
-            loadCurriculumDataAsync().then(data => setCurriculumData(data));
-          }
-        )
-      .subscribe();
-    
-    return () => {
-      // Cleanup subscription
+    // Set up realtime subscription only for authenticated users
+    if (user) {
+      const subscription = supabase
+        .channel('curriculum-changes')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'disciplinas' },
+            (payload) => {
+              console.log('Courses change detected:', payload);
+              loadCurriculumDataAsync().then(data => setCurriculumData(data));
+            }
+          )
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'prerequisitos' },
+            (payload) => {
+              console.log('Prerequisites change detected:', payload);
+              loadCurriculumDataAsync().then(data => setCurriculumData(data));
+            }
+          )
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'disciplinas_concluidas' },
+            (payload) => {
+              console.log('Completed courses change detected:', payload);
+              loadCurriculumDataAsync().then(data => setCurriculumData(data));
+            }
+          )
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'horarios' },
+            (payload) => {
+              console.log('Schedules change detected:', payload);
+              loadCurriculumDataAsync().then(data => setCurriculumData(data));
+            }
+          )
+        .subscribe();
+      
+      return () => {
+        // Cleanup subscription
         supabase.removeChannel(subscription);
-    };
-  }, []);
+      };
+    }
+  }, [user]); // Add user as dependency
 
   // Calculate course position based on period and row
   const calculatePosition = (period: number, row: number) => {
@@ -136,15 +140,29 @@ const CurriculumFlow: React.FC = () => {
           });
         });
         setSchedule(newSchedule);
+        
+        // Update local state immediately for better UX
+        setCurriculumData(prev => ({
+          ...prev,
+          completedCourses: prev.completedCourses.filter(id => id !== courseId)
+        }));
       } else {
         await markCourseCompleted(courseId);
+        
+        // Update local state immediately for better UX
+        setCurriculumData(prev => ({
+          ...prev,
+          completedCourses: [...prev.completedCourses, courseId]
+        }));
       }
-      
-      // Update local state - this is now handled by the realtime subscription
-      // But we keep it for immediate UI feedback
-      setCurriculumData(loadCurriculumData());
     } catch (error) {
       console.error('Error toggling course completion:', error);
+      // Show user-friendly error message for authentication issues
+      toast({
+        title: "Erro",
+        description: error instanceof Error ? error.message : "Erro ao marcar disciplina",
+        variant: "destructive"
+      });
     }
   };
 
