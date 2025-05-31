@@ -98,7 +98,6 @@ const CourseNode = ({ data }: CourseNodeProps) => {
 
   return (
     <>
-      {/* Handle esquerdo para conexões de entrada */}
       <Handle
         type="target"
         position={Position.Left}
@@ -110,7 +109,6 @@ const CourseNode = ({ data }: CourseNodeProps) => {
         }}
       />
       
-      {/* Handle direito para conexões de saída */}
       <Handle
         type="source"
         position={Position.Right}
@@ -132,34 +130,49 @@ const CourseNode = ({ data }: CourseNodeProps) => {
         }}
         onClick={() => onClick(course)}
       >
-        <div className="flex flex-col h-full justify-between">
-          <div className={`text-sm font-semibold leading-tight ${getTextColor()}`}>{course.name}</div>
-        <div>
-          <div className="flex items-center justify-between text-xs">
-            <span className={`${getTypeColor(course.type)}`}>{course.type}</span>
-            <span className="text-gray-500">{course.id}</span>
+        <div className="flex flex-col h-full">
+          <div className={`text-sm font-semibold leading-tight ${getTextColor()} flex-1 overflow-hidden`}>
+            <div className="h-10 flex items-start">
+              <span 
+                className="block overflow-hidden"
+                style={{
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}
+              >
+                {course.name}
+              </span>
+            </div>
           </div>
-          <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
-            <span>{course.credits} créd.</span>
-            <span>{course.hours}h</span>
-            <button
-              className={`ml-2 px-2 py-0.5 rounded text-xs font-semibold border transition-colors
-                ${isCompleted
-                  ? 'bg-green-100 text-green-700 border-green-400 cursor-pointer'
-                  : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200 hover:text-gray-800 cursor-pointer'}
-              `}
-              onClick={e => {
-                e.stopPropagation();
-                onToggleCompletion(course.id);
-              }}
-              title={isCompleted ? 'Desmarcar como concluído' : 'Marcar como concluído'}
-            >
-              {isCompleted ? 'Concluído' : 'Concluir'}
-            </button>
+          
+          <div className="flex flex-col gap-1 mt-auto">
+            <div className="flex items-center text-xs">
+              <span className={`${getTypeColor(course.type)}`}>{course.type}</span>
+            </div>
+            
+            <div className="flex items-center justify-between text-xs text-gray-500">
+              <span>{course.hours}</span>
+              <button
+                className={`px-1.5 py-0.5 rounded text-[10px] font-semibold border transition-colors
+                  ${isCompleted
+                    ? 'bg-green-100 text-green-700 border-green-400 cursor-pointer'
+                    : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200 hover:text-gray-800 cursor-pointer'}
+                `}
+                onClick={e => {
+                  e.stopPropagation();
+                  onToggleCompletion(course.id);
+                }}
+                title={isCompleted ? 'Desmarcar como concluído' : 'Marcar como concluído'}
+              >
+                {isCompleted ? '✓' : 'Concluir'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
     </>
   );
 };
