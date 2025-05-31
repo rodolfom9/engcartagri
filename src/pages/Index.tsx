@@ -48,7 +48,10 @@ const Index = () => {
     <div className="flex flex-col min-h-screen">
       <header className="border-b">
         <div className="container mx-auto p-2 flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Gerenciador de Grade Curricular da Engenharia Cartográfica e de Agrimensura - IFG.</h1>
+          <h1 className="text-lg md:text-2xl font-bold truncate pr-2">
+            <span className="hidden md:inline">Gerenciador de Grade Curricular da Engenharia Cartográfica e de Agrimensura - IFG.</span>
+            <span className="md:hidden">Grade Curricular - IFG</span>
+          </h1>
           <div>
             {!loading && (
               user ? (
@@ -68,35 +71,44 @@ const Index = () => {
       
       <div className="container mx-auto px-2 py-2">
         <Tabs defaultValue="view" className="flex-1 flex flex-col">
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr,auto] gap-4 items-start mb-4">
+          <div className="flex flex-col lg:grid lg:grid-cols-[1fr,auto] gap-4 items-start mb-4">
             <Card>
               <CardContent className="p-2 pt-2">
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   <div className="border rounded-lg p-2 text-center">
                     <p className="text-xs text-muted-foreground">Disciplinas</p>
-                    <p className="text-xl font-bold">{coursesCount}</p>
+                    <p className="text-lg md:text-xl font-bold">{coursesCount}</p>
                   </div>
                   <div className="border rounded-lg p-2 text-center">
                     <p className="text-xs text-muted-foreground">Pré-requisitos</p>
-                    <p className="text-xl font-bold">{prerequisitesCount}</p>
+                    <p className="text-lg md:text-xl font-bold">{prerequisitesCount}</p>
                   </div>
                   <div className="border rounded-lg p-2 text-center">
                     <p className="text-xs text-muted-foreground">Concluídas</p>
-                    <p className="text-xl font-bold">{completedCoursesCount}</p>
+                    <p className="text-lg md:text-xl font-bold">{completedCoursesCount}</p>
                   </div>
                   <div className="border rounded-lg p-2 text-center">
                     <p className="text-xs text-muted-foreground">% Concluída</p>
-                    <p className="text-xl font-bold">{completedPercentage.toFixed(1)}%</p>
+                    <p className="text-lg md:text-xl font-bold">{completedPercentage.toFixed(1)}%</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
             
             <div className="flex items-center">
-              <TabsList className="grid grid-cols-3">
-                <TabsTrigger value="view">Visualizar Grade</TabsTrigger>
-                <TabsTrigger value="manage" disabled={!user}>Manage Data</TabsTrigger>
-                <TabsTrigger value="import-export">Import/Export</TabsTrigger>
+              <TabsList className="grid grid-cols-3 w-full md:w-auto">
+                <TabsTrigger value="view" className="text-xs md:text-sm">
+                  <span className="hidden md:inline">Visualizar Grade</span>
+                  <span className="md:hidden">Grade</span>
+                </TabsTrigger>
+                <TabsTrigger value="manage" disabled={!user} className="text-xs md:text-sm">
+                  <span className="hidden md:inline">Manage Data</span>
+                  <span className="md:hidden">Dados</span>
+                </TabsTrigger>
+                <TabsTrigger value="import-export" className="text-xs md:text-sm">
+                  <span className="hidden md:inline">Import/Export</span>
+                  <span className="md:hidden">I/E</span>
+                </TabsTrigger>
               </TabsList>
             </div>
           </div>
