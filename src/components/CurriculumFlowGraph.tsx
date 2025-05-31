@@ -131,45 +131,38 @@ const CourseNode = ({ data }: CourseNodeProps) => {
         onClick={() => onClick(course)}
       >
         <div className="flex flex-col h-full">
-          <div className={`text-sm font-semibold leading-tight ${getTextColor()} flex-1 overflow-hidden`}>
-            <div className="h-10 flex items-start">
-              <span 
-                className="block overflow-hidden"
-                style={{
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis'
-                }}
-              >
-                {course.name}
-              </span>
-            </div>
+          <div className={`text-sm font-semibold ${getTextColor()} overflow-hidden`}
+               style={{ 
+                 display: '-webkit-box',
+                 WebkitLineClamp: 3,
+                 WebkitBoxOrient: 'vertical',
+                 overflow: 'hidden',
+                 textOverflow: 'ellipsis',
+                 lineHeight: '1.1',
+                 maxHeight: '66px'
+               }}>
+            {course.name}
           </div>
           
-          <div className="flex flex-col gap-1 mt-auto">
-            <div className="flex items-center text-xs">
+          <div className="flex items-center justify-between text-xs text-gray-500 mt-auto pt-1">
+            <div className="flex items-center gap-2">
               <span className={`${getTypeColor(course.type)}`}>{course.type}</span>
-            </div>
-            
-            <div className="flex items-center justify-between text-xs text-gray-500">
               <span>{course.hours}</span>
-              <button
-                className={`px-1.5 py-0.5 rounded text-[10px] font-semibold border transition-colors
-                  ${isCompleted
-                    ? 'bg-green-100 text-green-700 border-green-400 cursor-pointer'
-                    : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200 hover:text-gray-800 cursor-pointer'}
-                `}
-                onClick={e => {
-                  e.stopPropagation();
-                  onToggleCompletion(course.id);
-                }}
-                title={isCompleted ? 'Desmarcar como concluído' : 'Marcar como concluído'}
-              >
-                {isCompleted ? '✓' : 'Concluir'}
-              </button>
             </div>
+            <button
+              className={`px-1.5 py-0.5 rounded text-[10px] font-semibold border transition-colors ${
+                isCompleted
+                  ? 'bg-green-100 text-green-700 border-green-400 cursor-pointer'
+                  : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200 hover:text-gray-800 cursor-pointer'
+              }`}
+              onClick={e => {
+                e.stopPropagation();
+                onToggleCompletion(course.id);
+              }}
+              title={isCompleted ? 'Desmarcar como concluído' : 'Marcar como concluído'}
+            >
+              {isCompleted ? '✓' : 'Concluir'}
+            </button>
           </div>
         </div>
       </div>
