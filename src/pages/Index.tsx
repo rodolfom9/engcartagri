@@ -66,42 +66,43 @@ const Index = () => {
         </div>
       </header>
       
-      <div className="container mx-auto px-2 py-2 grid grid-cols-1 md:grid-cols-3 gap-2">
-        <Card>
-          <CardContent className="p-2 pt-2">
-            <div className="grid grid-cols-4 gap-2">
-              <div className="border rounded-lg p-2 text-center">
-                <p className="text-xs text-muted-foreground">Disciplinas</p>
-                <p className="text-xl font-bold">{coursesCount}</p>
-              </div>
-              <div className="border rounded-lg p-2 text-center">
-                <p className="text-xs text-muted-foreground">Pré-requisitos</p>
-                <p className="text-xl font-bold">{prerequisitesCount}</p>
-              </div>
-              <div className="border rounded-lg p-2 text-center">
-                <p className="text-xs text-muted-foreground">Concluídas</p>
-                <p className="text-xl font-bold">{completedCoursesCount}</p>
-              </div>
-              <div className="border rounded-lg p-2 text-center">
-                <p className="text-xs text-muted-foreground">% Concluída</p>
-                <p className="text-xl font-bold">{completedPercentage.toFixed(1)}%</p>
-              </div>
+      <div className="container mx-auto px-2 py-2">
+        <Tabs defaultValue="view" className="flex-1 flex flex-col">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr,auto] gap-4 items-start mb-4">
+            <Card>
+              <CardContent className="p-2 pt-2">
+                <div className="grid grid-cols-4 gap-2">
+                  <div className="border rounded-lg p-2 text-center">
+                    <p className="text-xs text-muted-foreground">Disciplinas</p>
+                    <p className="text-xl font-bold">{coursesCount}</p>
+                  </div>
+                  <div className="border rounded-lg p-2 text-center">
+                    <p className="text-xs text-muted-foreground">Pré-requisitos</p>
+                    <p className="text-xl font-bold">{prerequisitesCount}</p>
+                  </div>
+                  <div className="border rounded-lg p-2 text-center">
+                    <p className="text-xs text-muted-foreground">Concluídas</p>
+                    <p className="text-xl font-bold">{completedCoursesCount}</p>
+                  </div>
+                  <div className="border rounded-lg p-2 text-center">
+                    <p className="text-xs text-muted-foreground">% Concluída</p>
+                    <p className="text-xl font-bold">{completedPercentage.toFixed(1)}%</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <div className="flex items-center">
+              <TabsList className="grid grid-cols-3">
+                <TabsTrigger value="view">Visualizar Grade</TabsTrigger>
+                <TabsTrigger value="manage" disabled={!user}>Manage Data</TabsTrigger>
+                <TabsTrigger value="import-export">Import/Export</TabsTrigger>
+              </TabsList>
             </div>
-          </CardContent>
-        </Card>
-      </div>
-      
-      <Tabs defaultValue="view" className="flex-1 flex flex-col">
-        <div className="container mx-auto px-2">
-          <TabsList className="grid grid-cols-3 mb-0">
-            <TabsTrigger value="view">Visualizar Grade</TabsTrigger>
-            <TabsTrigger value="manage" disabled={!user}>Manage Data</TabsTrigger>
-            <TabsTrigger value="import-export">Import/Export</TabsTrigger>
-          </TabsList>
-        </div>
+          </div>
         
         <TabsContent value="view" className="flex-1 pt-0 mt-0">
-          <CurriculumFlow key={refreshKey} onDataChange={handleDataChange} />
+          <CurriculumFlow key={refreshKey} />
         </TabsContent>
         
         <TabsContent value="manage" className="flex-1">
@@ -130,6 +131,7 @@ const Index = () => {
           </div>
         </TabsContent>
       </Tabs>
+    </div>
     </div>
   );
 };
