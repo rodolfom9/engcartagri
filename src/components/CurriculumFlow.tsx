@@ -12,7 +12,6 @@ import {
 import CourseBox from './CourseBox';
 import ScheduleGrid from './ScheduleGrid';
 import CourseList from './CourseList';
-import ProgressBar from './ProgressBar';
 import ZoomControl from './ZoomControl';
 import { Button } from './ui/button';
 import { Checkbox } from './ui/checkbox';
@@ -296,12 +295,6 @@ const CurriculumFlow: React.FC = () => {
 
   return (
     <div className="px-2 py-0 text-sm">
-      <div className="mb-2">
-        <ProgressBar 
-          percentage={calculateCompletedHours()} 
-          label="Porcentagem de Carga Horária Cumprida"
-        />
-      </div>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3 mb-1">
           <TabsTrigger value="flow">Fluxo do Curso</TabsTrigger>

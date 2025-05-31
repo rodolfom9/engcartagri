@@ -7,6 +7,7 @@ import CurriculumFlow from '../components/CurriculumFlow';
 import ManageCurriculum from '../components/ManageCurriculum';
 import ImportExport from '../components/ImportExport';
 import { loadCurriculumData, loadCurriculumDataAsync } from '../lib/curriculumStorage';
+import { useCurriculumPercentage } from '../hooks/use-curriculum-percentage';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../integrations/supabase/client';
 
@@ -17,6 +18,9 @@ const Index = () => {
   const [prerequisitesCount, setPrerequisitesCount] = useState(0);
   const [completedCoursesCount, setCompletedCoursesCount] = useState(0);
   
+  // Usar o hook personalizado para calcular a porcentagem
+  const completedPercentage = useCurriculumPercentage(refreshKey);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -64,12 +68,8 @@ const Index = () => {
       
       <div className="container mx-auto px-2 py-2 grid grid-cols-1 md:grid-cols-3 gap-2">
         <Card>
-          <CardHeader className="p-2">
-            <CardTitle className="text-xs">Estatísticas</CardTitle>
-            <CardDescription className="text-xs">Visão geral do currículo</CardDescription>
-          </CardHeader>
-          <CardContent className="p-2 pt-0">
-            <div className="grid grid-cols-3 gap-2">
+          <CardContent className="p-2 pt-2">
+            <div className="grid grid-cols-4 gap-2">
               <div className="border rounded-lg p-2 text-center">
                 <p className="text-xs text-muted-foreground">Disciplinas</p>
                 <p className="text-xl font-bold">{coursesCount}</p>
@@ -82,27 +82,11 @@ const Index = () => {
                 <p className="text-xs text-muted-foreground">Concluídas</p>
                 <p className="text-xl font-bold">{completedCoursesCount}</p>
               </div>
+              <div className="border rounded-lg p-2 text-center">
+                <p className="text-xs text-muted-foreground">% Concluída</p>
+                <p className="text-xl font-bold">{completedPercentage.toFixed(1)}%</p>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="md:col-span-2">
-          <CardHeader className="p-2">
-            <CardTitle className="text-xs">Informações</CardTitle>
-            <CardDescription>Sobre o gerenciador</CardDescription>
-          </CardHeader>
-          <CardContent className="p-2 pt-0">
-            <p>
-              Este gerenciador permite gerenciar sua grade de horários.
-            </p>
-            <p className="mt-2">
-              Login só e usado pelo admin. Caso Encontre algum problema, entre em contato com o desenvolvedor.
-              {!user && (
-                <span className="text-amber-600 ml-1">
-                  **
-                </span>
-              )}
-            </p>
           </CardContent>
         </Card>
       </div>
