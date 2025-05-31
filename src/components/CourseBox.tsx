@@ -40,7 +40,7 @@ const CourseBox: React.FC<CourseBoxProps> = ({
 
   return (
     <div
-      className="absolute bg-white border border-gray-300 rounded shadow-sm overflow-hidden animate-fade-in cursor-pointer touch-manipulation"
+      className="absolute bg-white border border-gray-300 rounded shadow-sm overflow-hidden animate-fade-in cursor-pointer"
       style={{
         left: `${position.left}px`,
         top: `${position.top}px`,
@@ -49,22 +49,22 @@ const CourseBox: React.FC<CourseBoxProps> = ({
       onClick={onClick}
     >
       <div 
-        className={`p-1 md:p-2 relative text-center font-medium text-gray-800 flex flex-col items-center justify-center ${getCourseTypeClass(course.type)}`}
-        style={{ minHeight: '60px' }}
+        className={`p-2 relative text-center font-medium text-gray-800 flex flex-col items-center justify-center ${getCourseTypeClass(course.type)}`}
+        style={{ minHeight: '80px' }}
       >
-        <div className="text-xs md:text-sm leading-tight">{course.name}</div>
+        <div className="text-sm">{course.name}</div>
       </div>
       
       <div className="flex justify-between items-center bg-gray-100 p-1 text-xs">
-        <span className="text-xs">{course.hours}</span>
-        <span className="font-semibold text-xs">{course.type}</span>
+        <span>{course.hours}</span>
+        <span className="font-semibold">{course.type}</span>
         <div className="flex items-center gap-1">
-          <span className="text-xs">{course.credits}</span>
+          <span>{course.credits}</span>
           {isFlowTab && (
             <Button
               variant="ghost"
               size="sm" 
-              className={`py-0 h-4 md:h-5 px-1 text-[9px] md:text-[10px] ${
+              className={`py-0 h-5 px-1 text-[10px] ${
                 isCompleted 
                   ? 'text-green-700 hover:text-green-800 hover:bg-green-100' 
                   : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200 animate-pulse shadow-lg'
@@ -75,8 +75,7 @@ const CourseBox: React.FC<CourseBoxProps> = ({
               }}
               disabled={!canTake}
             >
-              <span className="hidden md:inline">{isCompleted ? 'Concluído' : 'Concluir'}</span>
-              <span className="md:hidden">{isCompleted ? '✓' : '○'}</span>
+              {isCompleted ? 'Concluído' : 'Concluir'}
             </Button>
           )}
         </div>
