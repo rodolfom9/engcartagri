@@ -32,9 +32,10 @@ const PositionableEdge: FC<EdgeProps> = ({
   const reactFlowInstance = useReactFlow();
   
   // Garantir que data sempre existe com valores padrão
-  const edgeData = data || { positionHandlers: [], type: 'smoothstep' };
+  const edgeData = data || { positionHandlers: [], type: 'smoothstep', userAuthenticated: false };
   const positionHandlers = (edgeData.positionHandlers as Array<positionHandler>) ?? [];
   const type = edgeData.type ?? "smoothstep";
+  const userAuthenticated = edgeData.userAuthenticated ?? false;
   const edgeSegmentsCount = positionHandlers.length + 1;
   const edgeSegmentsArray = [];
 
@@ -88,7 +89,7 @@ const PositionableEdge: FC<EdgeProps> = ({
     <>
       {edgeSegmentsArray.map(({ edgePath }, index) => (
         <ClickableBaseEdge
-          onClick={(event) => {
+          onClick={userAuthenticated ? (event) => {
             //console.log("OnClick");
             const position = reactFlowInstance.screenToFlowPosition({
               x: event.clientX,
@@ -113,21 +114,21 @@ const PositionableEdge: FC<EdgeProps> = ({
               });
             }
             reactFlowInstance.setEdges(new_edges);
-          }}
-          onContextMenu={(event) => {
+          } : undefined}
+          onContextMenu={userAuthenticated ? (event) => {
             event.preventDefault();
             const edges = reactFlowInstance.getEdges();
             let new_edges = edges.map((x) => x);
             new_edges = new_edges.filter((edge) => edge.id !== id);
             reactFlowInstance.setEdges(new_edges);
-          }}
+          } : undefined}
           key={`edge${id}_segment${index}`}
           path={edgePath}
           markerEnd={markerEnd}
           style={style}
         />
       ))}
-      {positionHandlers.map(({ x, y, active }, handlerIndex) => (
+      {userAuthenticated && positionHandlers.map(({ x, y, active }, handlerIndex) => (
         <EdgeLabelRenderer key={`edge${id}_handler${handlerIndex}`}>
           <div
             className="nopan positionHandlerContainer"

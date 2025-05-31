@@ -191,7 +191,12 @@ export default function CurriculumFlowGraph({
       
       return {
         ...edge,
-        data: edge.data || { positionHandlers: [], type: 'smoothstep' },
+        data: { 
+          ...(edge.data || {}), 
+          positionHandlers: edge.data?.positionHandlers || [], 
+          type: 'smoothstep',
+          userAuthenticated: !!user // Passar informação de autenticação para a edge
+        },
         type: edge.type || 'positionable',
         style: { 
           ...(edge.style || {}),
@@ -216,6 +221,11 @@ export default function CurriculumFlowGraph({
   
   const onConnect = useCallback(
     (params: Connection) => {
+      // Bloquear criação de novas conexões se o usuário não estiver autenticado
+      if (!user) {
+        return;
+      }
+
       // Garantir que todos os campos obrigatórios estão presentes
       if (!params.source || !params.target) {
         console.error('Conexão inválida: source ou target ausente', params);
@@ -231,7 +241,7 @@ export default function CurriculumFlowGraph({
         id: `edge-${params.source}-${params.target}`,
         type: 'positionable',
         style: { stroke: strokeColor, strokeWidth: 2 },
-        data: { positionHandlers: [], type: 'smoothstep' },
+        data: { positionHandlers: [], type: 'smoothstep', userAuthenticated: true },
         markerEnd: {
           type: MarkerType.ArrowClosed,
           color: strokeColor,
@@ -253,7 +263,7 @@ export default function CurriculumFlowGraph({
         return updatedEdges;
       });
     },
-    [edges, setEdges, completedCourses]
+    [edges, setEdges, completedCourses, user]
   );
   console.log('CurriculumFlowGraph - courses:', courses);
   console.log('CurriculumFlowGraph - completedCourses:', completedCourses);
@@ -435,7 +445,7 @@ export default function CurriculumFlowGraph({
         edgeTypes={edgeTypes}
         fitView
         nodesDraggable={true}
-        nodesConnectable={true}
+        nodesConnectable={!!user} // Só permite conectar nós se o usuário estiver autenticado
         elementsSelectable={true}
         connectionMode={ConnectionMode.Loose}
       >

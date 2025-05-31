@@ -30,6 +30,9 @@ const ClickableBaseEdge = ({
           className="react-flow__edge-interaction"
           onClick={onClick}
           onContextMenu={onContextMenu}
+          style={{
+            cursor: onClick || onContextMenu ? 'pointer' : 'default'
+          }}
         />
       )}
     </>
