@@ -22,6 +22,7 @@ import { useAuth } from '@/contexts/AuthContext';
 interface Props {
   courses: Course[];
   completedCourses: string[];
+  prerequisites: { from: string; to: string; tipo: number }[];
   onToggleCompletion: (id: string) => void;
   onCourseClick: (course: Course) => void;
 }
@@ -181,20 +182,26 @@ const edgeTypes = {
 export default function CurriculumFlowGraph({ 
   courses, 
   completedCourses, 
+  prerequisites,
   onToggleCompletion, 
   onCourseClick 
 }: Props) {
   const { user } = useAuth(); // Hook para verificar autenticação
-  // Função para garantir que as edges tenham a estrutura correta e aplicar cores baseadas na conclusão
+  // Função para garantir que as edges tenham a estrutura correta e aplicar cores baseadas na conclusão e tipo
   const sanitizeEdges = (edges: Edge[]): Edge[] => {
     return edges.map(edge => {
-      // Verificar se o curso pré-requisito (source) foi concluído
+      // Buscar o tipo do pré-requisito correspondente
+      const prereq = prerequisites.find(p => p.from === edge.source && p.to === edge.target);
+      const tipo = prereq?.tipo || 1;
+      // Se a disciplina de origem estiver concluída, seta verde
       const isPrerequisiteCompleted = completedCourses.includes(edge.source || '');
-      
-      // Definir cores baseadas na conclusão do pré-requisito
-      const strokeColor = isPrerequisiteCompleted ? '#10b981' : '#ef4444'; // Verde para concluído, vermelho para não concluído
+      let strokeColor = '#ef4444'; // Vermelho padrão
+      if (isPrerequisiteCompleted) {
+        strokeColor = '#10b981'; // Verde
+      } else if (tipo === 2) {
+        strokeColor = '#2563eb'; // Azul para co-requisito não concluído
+      } // Senão, permanece vermelho
       const markerColor = strokeColor;
-      
       return {
         ...edge,
         data: { 

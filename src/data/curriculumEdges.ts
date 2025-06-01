@@ -38,6 +38,30 @@ export const curriculumEdges: Edge[] = [
       type: MarkerType.ArrowClosed,
       color: '#b1b1b7',
     },
+  },
+  {
+    id: 'edge-DPAA-2.0024-DPAA-3.0077',
+    source: 'DPAA-2.0024',
+    target: 'DPAA-3.0077',
+    type: 'positionable',
+    style: { stroke: '#b1b1b7', strokeWidth: 2 },
+    data: { positionHandlers: [{"x":332.68469131501666,"y":265.6368426286379,"active":-1}], type: 'smoothstep' },
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+      color: '#b1b1b7',
+    },
+  },
+  {
+    id: 'edge-DPAA-2.0303-DPAA-3.0061',
+    source: 'DPAA-2.0303',
+    target: 'DPAA-3.0061',
+    type: 'positionable',
+    style: { stroke: '#b1b1b7', strokeWidth: 2 },
+    data: { positionHandlers: [{"x":413.83181939225227,"y":538.9739534945093,"active":-1}], type: 'smoothstep' },
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+      color: '#b1b1b7',
+    },
   }
 ];
 

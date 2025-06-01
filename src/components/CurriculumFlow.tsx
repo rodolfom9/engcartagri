@@ -329,6 +329,7 @@ const CurriculumFlow: React.FC = () => {
               <CurriculumFlowGraph
                 courses={curriculumData.courses}  
                 completedCourses={curriculumData.completedCourses}
+                prerequisites={curriculumData.prerequisites}
                 onToggleCompletion={(id) => handleMarkCourseCompleted(id)}
                 onCourseClick={handleCourseClick}
               />
