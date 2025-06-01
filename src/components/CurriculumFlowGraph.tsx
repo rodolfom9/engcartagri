@@ -123,8 +123,8 @@ const CourseNode = ({ data }: CourseNodeProps) => {
       />
       <Handle
         type="source"
-        position={Position.Bottom}
-        id="bottom"
+        position={Position.Top}
+        id="top"
         style={{
           background: '#555',
           width: 8,
@@ -134,8 +134,8 @@ const CourseNode = ({ data }: CourseNodeProps) => {
       />
       <Handle
         type="target"
-        position={Position.Top}
-        id="top"
+        position={Position.Bottom}
+        id="bottom"
         style={{
           background: '#555',
           width: 8,
