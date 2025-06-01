@@ -102,6 +102,7 @@ const CourseNode = ({ data }: CourseNodeProps) => {
       <Handle
         type="target"
         position={Position.Left}
+        id="left"
         style={{
           background: '#555',
           width: 8,
@@ -109,10 +110,10 @@ const CourseNode = ({ data }: CourseNodeProps) => {
           border: '2px solid #fff',
         }}
       />
-      
       <Handle
         type="source"
         position={Position.Right}
+        id="right"
         style={{
           background: '#555',
           width: 8,
@@ -120,7 +121,28 @@ const CourseNode = ({ data }: CourseNodeProps) => {
           border: '2px solid #fff',
         }}
       />
-      
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="bottom"
+        style={{
+          background: '#555',
+          width: 8,
+          height: 8,
+          border: '2px solid #fff',
+        }}
+      />
+      <Handle
+        type="target"
+        position={Position.Top}
+        id="top"
+        style={{
+          background: '#555',
+          width: 8,
+          height: 8,
+          border: '2px solid #fff',
+        }}
+      />
       <div
         className={`p-2 rounded-lg border-2 shadow-sm cursor-pointer ${getBgColor()} ${getBorderColor()}`}
         style={{ 
@@ -245,13 +267,45 @@ export default function CurriculumFlowGraph({
         return;
       }
 
+      // Log para depuração
+      console.log('onConnect params:', params);
+
+      // Se a conexão for de top para bottom, inverter para que a seta aponte para baixo
+      let finalParams = { ...params };
+      if (params.sourceHandle === 'top' && params.targetHandle === 'bottom') {
+        finalParams = {
+          ...params,
+          source: params.target,
+          target: params.source,
+          sourceHandle: 'bottom',
+          targetHandle: 'top',
+        };
+      }
+      // Se os handles não estiverem explícitos, comparar a posição Y dos nós
+      if (!params.sourceHandle && !params.targetHandle) {
+        const sourceNode = flowNodes.find(n => n.id === params.source);
+        const targetNode = flowNodes.find(n => n.id === params.target);
+        if (sourceNode && targetNode && sourceNode.position.y < targetNode.position.y) {
+          // Se o source está acima do target, seta para baixo (não inverte)
+          // Se o source está abaixo do target, inverte para forçar seta para baixo
+        } else if (sourceNode && targetNode && sourceNode.position.y > targetNode.position.y) {
+          finalParams = {
+            ...params,
+            source: params.target,
+            target: params.source,
+            sourceHandle: 'bottom',
+            targetHandle: 'top',
+          };
+        }
+      }
+
       // Verificar se o curso pré-requisito foi concluído para definir a cor
-      const isPrerequisiteCompleted = completedCourses.includes(params.source || '');
+      const isPrerequisiteCompleted = completedCourses.includes(finalParams.source || '');
       const strokeColor = isPrerequisiteCompleted ? '#10b981' : '#ef4444'; // Verde para concluído, vermelho para não concluído
 
       const newEdge: Edge = {
-        ...params,
-        id: `edge-${params.source}-${params.target}`,
+        ...finalParams,
+        id: `edge-${finalParams.source}-${finalParams.target}`,
         type: 'positionable',
         style: { stroke: strokeColor, strokeWidth: 2 },
         data: { positionHandlers: [], type: 'smoothstep', userAuthenticated: true },
@@ -461,6 +515,7 @@ export default function CurriculumFlowGraph({
         nodesConnectable={!!user} // Só permite conectar nós se o usuário estiver autenticado
         elementsSelectable={true}
         connectionMode={ConnectionMode.Loose}
+        isValidConnection={() => true}
       >
         <Background />
         <Controls />
