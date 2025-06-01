@@ -39,6 +39,32 @@ const Index = () => {
     
     fetchData();
   }, [refreshKey]);
+
+  // Listen for curriculum data changes from child components
+  useEffect(() => {
+    const handleCurriculumDataChange = async () => {
+      try {
+        const data = await loadCurriculumDataAsync();
+        setCoursesCount(data.courses.length);
+        setPrerequisitesCount(data.prerequisites.length);
+        setCompletedCoursesCount(data.completedCourses.length);
+        setRefreshKey(prev => prev + 1); // Only update refreshKey to trigger percentage recalculation
+      } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+        const localData = loadCurriculumData();
+        setCoursesCount(localData.courses.length);
+        setPrerequisitesCount(localData.prerequisites.length);
+        setCompletedCoursesCount(localData.completedCourses.length);
+        setRefreshKey(prev => prev + 1);
+      }
+    };
+
+    window.addEventListener('curriculumDataChanged', handleCurriculumDataChange);
+
+    return () => {
+      window.removeEventListener('curriculumDataChanged', handleCurriculumDataChange);
+    };
+  }, []);
   
   const handleDataChange = () => {
     setRefreshKey(prev => prev + 1);
@@ -102,7 +128,7 @@ const Index = () => {
           </div>
         
         <TabsContent value="view" className="flex-1 pt-0 mt-0">
-          <CurriculumFlow key={refreshKey} />
+          <CurriculumFlow />
         </TabsContent>
         
         <TabsContent value="manage" className="flex-1">

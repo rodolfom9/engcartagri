@@ -198,24 +198,23 @@ export const loadCurriculumData = (): CurriculumData => {
   try {
     if (typeof window === 'undefined') return defaultEmptyCurriculumData;
     
-    // Try to load from localStorage first (for courses and prerequisites)
+    // Try to load from localStorage first
     const savedData = localStorage.getItem(STORAGE_KEY);
     const data = savedData ? JSON.parse(savedData) : defaultEmptyCurriculumData;
     
-    // For completed courses, check sessionStorage first (for non-authenticated users)
-    // This ensures that completed courses are only preserved during session, not after F5
+    // Use sessionStorage for temporary changes during session if available
     const sessionCompletedCourses = sessionStorage.getItem('completed_courses_session');
-    const localCompletedCourses = data.completedCourses || [];
     
-    // Use session storage completed courses if available, otherwise use localStorage
-    const completedCourses = sessionCompletedCourses 
-      ? JSON.parse(sessionCompletedCourses) 
-      : localCompletedCourses;
+    if (sessionCompletedCourses) {
+      // Prioriza sessionStorage porque contém alterações mais recentes
+      return {
+        ...data,
+        completedCourses: JSON.parse(sessionCompletedCourses)
+      };
+    }
     
-    return {
-      ...data,
-      completedCourses: completedCourses
-    };
+    // Se não houver dados no sessionStorage, usa os dados do localStorage
+    return data;
   } catch (error) {
     console.error('Error loading data from localStorage:', error);
     return defaultEmptyCurriculumData;
@@ -226,15 +225,10 @@ export const loadCurriculumData = (): CurriculumData => {
 export const saveCurriculumData = (data: CurriculumData): void => {
   if (typeof window === 'undefined') return;
   
-  // Always save courses and prerequisites to localStorage (these are shared)
-  const dataForLocalStorage = {
-    ...data,
-    completedCourses: [] // Don't save completed courses to localStorage for non-authenticated users
-  };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(dataForLocalStorage));
+  // Sempre salva os dados completos no localStorage
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   
-  // Save completed courses to sessionStorage (will be lost on F5)
-  // This ensures completed courses are only preserved during navigation, not after reload
+  // Também salva completed courses no sessionStorage para compatibilidade com código existente
   sessionStorage.setItem('completed_courses_session', JSON.stringify(data.completedCourses));
 };
 

@@ -155,6 +155,9 @@ const CurriculumFlow: React.FC = () => {
           completedCourses: [...prev.completedCourses, courseId]
         }));
       }
+      
+      // Trigger a custom event to notify the parent component without causing a full reload
+      window.dispatchEvent(new CustomEvent('curriculumDataChanged'));
     } catch (error) {
       console.error('Error toggling course completion:', error);
       // Show user-friendly error message for authentication issues

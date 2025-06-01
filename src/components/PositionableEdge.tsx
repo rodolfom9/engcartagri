@@ -124,7 +124,7 @@ const PositionableEdge: FC<EdgeProps> = ({
           } : undefined}
           key={`edge${id}_segment${index}`}
           path={edgePath}
-          markerEnd={markerEnd}
+          markerEnd={index === edgeSegmentsArray.length - 1 ? markerEnd : undefined}
           style={style}
         />
       ))}

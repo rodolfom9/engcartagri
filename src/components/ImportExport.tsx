@@ -8,6 +8,7 @@ import { loadCurriculumData, importCurriculumToSupabase } from '@/lib/curriculum
 import { useToast } from '@/components/ui/use-toast';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ImportExportProps {
   onImport: () => void;
@@ -100,9 +101,43 @@ const ImportExport: React.FC<ImportExportProps> = ({ onImport }) => {
         completedCourses: completedCoursesToImport
       };
 
-      const success = await importCurriculumToSupabase(updatedData);
+      // Verificar se o usuário está autenticado
+      const { data: userData } = await supabase.auth.getSession();
       
-      if (success) {
+      if (userData?.session?.user) {
+        // Usuário autenticado - importar para o Supabase
+        const success = await importCurriculumToSupabase(updatedData);
+        
+        if (success) {
+          onImport();
+          
+          toast({
+            title: "Importação bem-sucedida",
+            description: `Importadas ${completedCoursesToImport.length} disciplinas concluídas`
+          });
+          
+          setImportData('');
+        } else {
+          toast({
+            title: "Falha ao importar para o Supabase",
+            description: "Não foi possível salvar os dados no banco. Tente novamente.",
+            variant: "destructive"
+          });
+          return;
+        }
+      } else {
+        // Usuário não autenticado - salvar no localStorage para persistir após recarregar a página
+        localStorage.setItem('curriculum_data', JSON.stringify({
+          ...currentData,
+          completedCourses: completedCoursesToImport
+        }));
+        
+        // Também atualizar o sessionStorage para uso imediato
+        sessionStorage.setItem('completed_courses_session', JSON.stringify(completedCoursesToImport));
+        
+        // Disparar evento para atualizar a UI
+        window.dispatchEvent(new CustomEvent('curriculumDataChanged'));
+        
         onImport();
         
         toast({
@@ -111,12 +146,6 @@ const ImportExport: React.FC<ImportExportProps> = ({ onImport }) => {
         });
         
         setImportData('');
-      } else {
-        toast({
-          title: "Falha ao importar para o Supabase",
-          description: "Não foi possível salvar os dados no banco. Tente novamente.",
-          variant: "destructive"
-        });
       }
     } catch (error) {
       console.error("Erro na importação:", error);
