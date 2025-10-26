@@ -339,7 +339,7 @@ export default function CurriculumFlowGraph({
   const testCourses = courses.length === 0 ? [
     {
       id: "CALC1",
-      name: "Cálculo I",
+      name: "Houve um problema ao carregar os dados. disciplina de teste.",
       period: 1,
       row: 1,
       hours: "90h",
@@ -347,26 +347,16 @@ export default function CurriculumFlowGraph({
       credits: 6,
       professor: "Prof. Test"
     },
-    {
-      id: "FISICA1", 
-      name: "Física I",
-      period: 1,
-      row: 2,
-      hours: "90h",
-      type: "NB" as const,
-      credits: 6,
-      professor: "Prof. Test"
-    },
-    {
+        {
       id: "CALC2",
-      name: "Cálculo II", 
+      name: "Provavelmente não haverá horarios e grades",
       period: 2,
       row: 1,
       hours: "90h",
       type: "NB" as const,
       credits: 6,
       professor: "Prof. Test"
-    }
+    },
   ] : courses;
   
   const flowNodes: Node[] = testCourses.map((course) => ({
