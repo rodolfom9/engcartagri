@@ -1,0 +1,31 @@
+name: Sempre Ativo
+
+# Executar todos os dias à meia-noite UTC (20h no horário de Brasília)
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Todo dia à 00:00 UTC
+  workflow_dispatch:  # Permite executar manualmente
+
+jobs:
+  sempre-ativo:
+    runs-on: ubuntu-latest
+    name: Keep Supabase Active
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Call Supabase Heartbeat
+        env:
+          SUPABASE_URL: https://vcqmpvfgepruwgxzfjzu.supabase.co
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            -H "Content-Type: application/json" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -d '{"query":"SELECT 1"}' \
+            "$SUPABASE_URL/rest/v1/disciplinas?select=id&limit=1"
+          
+          echo "✅ Heartbeat enviado com sucesso!"
+          echo "Timestamp: $(date -u)"
